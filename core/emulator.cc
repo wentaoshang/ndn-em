@@ -70,7 +70,6 @@ Emulator::ReadLinkConfig (const char* path)
       if (line[0] == ';')  // ignore comment line
 	continue;
 
-      std::cout << line << std::endl;
       std::istringstream iss (line);
       std::string from, to, linkId, param;
       iss >> from >> to >> linkId >> param;
@@ -103,7 +102,7 @@ Emulator::ReadLinkConfig (const char* path)
   std::map<std::string, boost::shared_ptr<Link> >::iterator it0;
   for (it0 = m_linkTable.begin (); it0 != m_linkTable.end (); it0++)
     {
-      std::cout << "LinkMatrix of " << it0->first << std::endl;
+      std::cout << "[Emulator::ReadLinkConfig] LinkMatrix for " << it0->first << ":" << std::endl;
       it0->second->PrintLinkMatrix ();
     }
 }

@@ -32,20 +32,6 @@ public:
     return m_id;
   }
 
-  Node&
-  GetNode (const std::string& nodeId)
-  {
-    std::map<std::string, boost::shared_ptr<Node> >::iterator it = m_nodeTable.find (nodeId);
-
-    if (it != m_nodeTable.end ())
-      return *(it->second);
-    else
-      throw std::invalid_argument ("Node not found");
-  }
-
-  void
-  Start ();
-
   void
   AddNode (const std::string& id, boost::shared_ptr<Node>& node)
   {
