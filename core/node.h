@@ -18,15 +18,13 @@ namespace emulator {
 class Node : boost::noncopyable {
 public:
   Node (const std::string& id, const std::string& socketPath,
-        boost::asio::io_service& ioService,
-        const boost::function<void (const std::string&, const uint8_t*, std::size_t)>& callback)
+        boost::asio::io_service& ioService)
     : m_id (id)
     , m_socketPath (socketPath)
     , m_endpoint (m_socketPath)
     , m_acceptor (ioService)
     , m_isListening (false)
     , m_faceCounter (0)
-    , m_emulatorCallback (callback)
   {
   }
 
@@ -45,10 +43,16 @@ public:
   }
 
   void
+  AddLink (const std::string& id, boost::shared_ptr<Link>& link)
+  {
+    m_linkTable[id] = link;
+  }
+
+  void
   Start ();
 
   void
-  Forward (const uint8_t*, std::size_t);
+  HandleLinkMessage (const std::string&, const uint8_t*, std::size_t);
 
 private:
   void
@@ -56,7 +60,7 @@ private:
                 const boost::system::error_code&);
 
   void
-  HandleMessage (const int, const uint8_t*, std::size_t);
+  HandleFaceMessage (const int, const uint8_t*, std::size_t);
 
   void
   RemoveFace (const int);
@@ -67,10 +71,15 @@ private:
   boost::asio::local::stream_protocol::endpoint m_endpoint; // local listening endpoint
   boost::asio::local::stream_protocol::acceptor m_acceptor; // local listening socket
   bool m_isListening;
+
+  // Face table maintains connections from local apps through unix socket
   int m_faceCounter;
-  std::map <int, boost::shared_ptr<Face> > m_faceTable;
-  // callback to notify received message to emulator
-  const boost::function<void (const std::string&, const uint8_t*, std::size_t)> m_emulatorCallback;
+  std::map<int, boost::shared_ptr<Face> > m_faceTable;
+
+  // Link table maintains physical links the node is attached to
+  std::map<std::string, boost::shared_ptr<Link> > m_linkTable;
+
+  //TODO: implement PIT, FIB and CS
 };
 
 } // namespace emulator

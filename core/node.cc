@@ -1,5 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
 
+#include "link.h"
 #include "node.h"
 
 namespace emulator {
@@ -30,23 +31,40 @@ Node::Start ()
   boost::shared_ptr<Face> client =
     boost::make_shared<Face> (faceId,
                               boost::ref (m_acceptor.get_io_service ()),
-                              boost::bind (&Node::HandleMessage, this, _1, _2, _3),
+                              boost::bind (&Node::HandleFaceMessage, this, _1, _2, _3),
                               boost::bind (&Node::RemoveFace, this, _1));
 
   m_acceptor.async_accept (client->GetSocket (),
 			   boost::bind (&Node::HandleAccept, this, client, _1));
 }
 
+
+/**
+ * Handle message from links
+ */
 void
-Node::Forward (const uint8_t* data, std::size_t length)
+Node::HandleLinkMessage (const std::string& linkId, const uint8_t* data, std::size_t length)
 {
+  std::string msg (reinterpret_cast<const char*> (data), length);
+  std::cout << "[Node::HandleLinkMessage] link = " << linkId << ": " << msg << std::endl;;
+
   //TODO: implement FIB (for Interest) & PIT (for Data)
 
-  // For now, broadcast to all faces
-  std::map<int, boost::shared_ptr<Face> >::iterator it;
-  for (it = m_faceTable.begin (); it != m_faceTable.end (); it++)
+  // For now, broadcast to all local apps and all links,
+  // except the link where the data is received
+  std::map<int, boost::shared_ptr<Face> >::iterator it_face;
+  for (it_face = m_faceTable.begin (); it_face != m_faceTable.end (); it_face++)
     {
-      it->second->Send (data, length);
+      it_face->second->Send (data, length);
+    }
+
+  std::map<std::string, boost::shared_ptr<Link> >::iterator it_link;
+  for (it_link = m_linkTable.begin (); it_link != m_linkTable.end (); it_link++)
+    {
+      if (it_link->first != linkId)
+        {
+          it_link->second->Transmit (m_id, data, length);
+        }
     }
 }
 
@@ -59,7 +77,7 @@ Node::HandleAccept (const boost::shared_ptr<Face>& face,
   boost::shared_ptr<Face> next =
     boost::make_shared<Face> (faceId,
                               boost::ref (m_acceptor.get_io_service ()),
-                              boost::bind (&Node::HandleMessage, this, _1, _2, _3),
+                              boost::bind (&Node::HandleFaceMessage, this, _1, _2, _3),
                               boost::bind (&Node::RemoveFace, this, _1));
 
   m_acceptor.async_accept (next->GetSocket (),
@@ -71,16 +89,33 @@ Node::HandleAccept (const boost::shared_ptr<Face>& face,
   face->Start ();
 }
 
+/**
+ * Handle message received from local face
+ */
 void
-Node::HandleMessage (const int faceId, const uint8_t* data, std::size_t length)
+Node::HandleFaceMessage (const int faceId, const uint8_t* data, std::size_t length)
 {
   std::string msg (reinterpret_cast<const char*> (data), length);
-  std::cout << "[Node::HandleMessage] id = " << m_id << ", Face = " << faceId << ": " << msg << std::endl;
+  std::cout << "[Node::HandleFaceMessage] id = " << m_id << ", face = " << faceId << ": " << msg << std::endl;
 
   //TODO: implement PIT
 
-  // Pass message to emulator core
-  m_emulatorCallback (m_id, data, length);
+  // For now, broadcast to all links and all local faces,
+  // except the face where the data is received
+  std::map<int, boost::shared_ptr<Face> >::iterator it_face;
+  for (it_face = m_faceTable.begin (); it_face != m_faceTable.end (); it_face++)
+    {
+      if (it_face->first != faceId)
+        {
+          it_face->second->Send (data, length);
+        }
+    }
+
+  std::map<std::string, boost::shared_ptr<Link> >::iterator it_link;
+  for (it_link = m_linkTable.begin (); it_link != m_linkTable.end (); it_link++)
+    {
+      it_link->second->Transmit (m_id, data, length);
+    }
 }
 
 void

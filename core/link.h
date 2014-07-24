@@ -3,38 +3,74 @@
 #ifndef __LINK_H__
 #define __LINK_H__
 
-#include <iostream>
+#include <map>
+#include <exception>
+#include <boost/asio.hpp>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/utility.hpp>
+
+#include "link-attribute.h"
 
 namespace emulator {
 
-class Link {
+class Node;
+
+class Link : boost::noncopyable {
 public:
-  Link ()
-    : m_connected (true)
+  Link (const std::string& id, boost::asio::io_service& ioService)
+    : m_id (id)
+    , m_ioService (ioService)
   {
   }
 
-  Link (bool connected)
-    : m_connected (connected)
+  const std::string&
+  GetId ()
   {
+    return m_id;
   }
 
-  bool
-  IsConnected () const
+  Node&
+  GetNode (const std::string& nodeId)
   {
-    return m_connected;
+    std::map<std::string, boost::shared_ptr<Node> >::iterator it = m_nodeTable.find (nodeId);
+
+    if (it != m_nodeTable.end ())
+      return *(it->second);
+    else
+      throw std::invalid_argument ("Node not found");
   }
+
+  void
+  Start ();
+
+  void
+  AddNode (const std::string& id, boost::shared_ptr<Node>& node)
+  {
+    m_nodeTable[id] = node;
+  }
+
+  void
+  AddConnection (const std::string& from, const std::string& to, boost::shared_ptr<LinkAttribute>& attr)
+  {
+    m_linkMatrix[from][to] = attr;
+  }
+
+  void
+  Transmit (const std::string&, const uint8_t*, std::size_t);
+
+  void
+  PrintLinkMatrix ();
 
 private:
-  bool m_connected;
-};
+  const std::string m_id; // link id
+  std::map<std::string, boost::shared_ptr<Node> > m_nodeTable; // nodes on the link
+  std::map<std::string, std::map<std::string, boost::shared_ptr<LinkAttribute> > > m_linkMatrix;
 
-inline std::ostream&
-operator<< (std::ostream& os, const Link& link)
-{
-  os << "Link::connected = " << link.IsConnected ();
-  return os;
-}
+  boost::asio::io_service& m_ioService;
+};
 
 } // namespace emulator
 

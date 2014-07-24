@@ -1,11 +1,13 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
 
-#include "emulator.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <exception>
 #include <boost/lexical_cast.hpp>
+#include <boost/utility.hpp>
+
+#include "emulator.h"
 
 namespace emulator {
 
@@ -14,6 +16,8 @@ namespace emulator {
  *   [id] [unix-socket-path] [app-file-path]
  *
  * The line started with a ';' is treated as comment and ignored.
+ *
+ * This function will create the nodes without adding links.
  */
 void
 Emulator::ReadNodeConfig (const char* path)
@@ -34,19 +38,22 @@ Emulator::ReadNodeConfig (const char* path)
       std::string nodeId, socketPath, appPath;
       iss >> nodeId >> socketPath >> appPath;
 
+      //TODO: sanitation check
+
       // For now, ignore app file path
       m_nodeTable[nodeId] =
-	boost::make_shared<Node> (nodeId, socketPath, boost::ref (m_ioService),
-                                  boost::bind (&Emulator::DispatchMessage, this, _1, _2, _3));
+	boost::make_shared<Node> (nodeId, socketPath, boost::ref (m_ioService));
     }
 }
 
 /**
  * Link config file is in the following space-separated format:
- *   [nodeID1] [nodeID2] [link-paramters] ...
- * which represents a link from nodeID1 to nodeID2.
+ *   [srcID] [dstID] [linkID] [link-paramters] ...
+ * which represents a link from srcID to dstID.
  *
  * The line started with a ';' is treated as comment and ignored.
+ *
+ * This function will add links to nodes and connection between nodes on the link.
  */
 void
 Emulator::ReadLinkConfig (const char* path)
@@ -63,12 +70,41 @@ Emulator::ReadLinkConfig (const char* path)
       if (line[0] == ';')  // ignore comment line
 	continue;
 
+      std::cout << line << std::endl;
       std::istringstream iss (line);
-      std::string from, to, param;
-      iss >> from >> to >> param;
+      std::string from, to, linkId, param;
+      iss >> from >> to >> linkId >> param;
+
+      boost::shared_ptr<Link> link;
+      std::map<std::string, boost::shared_ptr<Link> >::iterator it = m_linkTable.find (linkId);
+      if (it == m_linkTable.end ())
+        {
+          link = boost::make_shared<Link> (linkId, boost::ref (m_ioService));
+          m_linkTable[linkId] = link;
+        }
+      else
+        link = it->second;
 
       // For now, only support m_connected flag
-      m_linkMatrix[from][to] = boost::make_shared<Link> (boost::lexical_cast<bool> (param));
+      boost::shared_ptr<LinkAttribute> attr = boost::make_shared<LinkAttribute> (boost::lexical_cast<bool> (param));
+
+      //TODO: sanitation check
+
+      // Add nodes & connections to link
+      link->AddNode (from, m_nodeTable[from]);
+      link->AddNode (to, m_nodeTable[to]);
+      link->AddConnection (from, to, attr);
+
+      // Add links to nodes
+      m_nodeTable[from]->AddLink (linkId, link);
+      m_nodeTable[to]->AddLink (linkId, link);
+    }
+
+  std::map<std::string, boost::shared_ptr<Link> >::iterator it0;
+  for (it0 = m_linkTable.begin (); it0 != m_linkTable.end (); it0++)
+    {
+      std::cout << "LinkMatrix of " << it0->first << std::endl;
+      it0->second->PrintLinkMatrix ();
     }
 }
 
@@ -82,25 +118,6 @@ Emulator::Start ()
     }
 
   m_ioService.run (); // This call will block
-}
-
-void
-Emulator::DispatchMessage (const std::string& nodeId, const uint8_t* data, std::size_t length)
-{
-  std::string msg (reinterpret_cast<const char*> (data), length);
-  std::cout << "[Emulator::DispatchMessage] Node = " << nodeId << ": " << msg << std::endl;
-
-  // For now, implement broadcast link
-  std::map<std::string, boost::shared_ptr<Link> >& neighbors = m_linkMatrix[nodeId];
-  std::map<std::string, boost::shared_ptr<Link> >::iterator it;
-  for (it = neighbors.begin (); it != neighbors.end (); it++)
-    {
-      if (it->second->IsConnected ())
-        {
-          std::cout << "[Emulator::DoispatchMessage] forward to Node " << it->first << std::endl;
-          m_nodeTable[it->first]->Forward (data, length);
-        }
-    }
 }
 
 } // namespace emulator

@@ -9,8 +9,8 @@ int
 main (int argc, char* argv[])
 {
   Emulator em;
-  em.ReadNodeConfig ("node.txt");
-  em.ReadLinkConfig ("link.txt");
+  em.ReadNodeConfig (argv[1]);
+  em.ReadLinkConfig (argv[2]);
 
   em.Start ();
 
@@ -28,11 +28,11 @@ main (int argc, char* argv[])
     }
   catch (std::exception& e)
     {
-      std::cerr << e.what () << std::endl;
+      std::cerr << "[main] std error = " << e.what () << std::endl;
     }
   catch (boost::system::error_code& e)
     {
-      std::cerr << e.message () << std::endl;
+      std::cerr << "[main] boost error = " << e.message () << std::endl;
     }
 
   return 0;
