@@ -1,0 +1,2 @@
+n0 /tmp/node0 abc
+n1 /tmp/node1 abcd
