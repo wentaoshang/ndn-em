@@ -17,9 +17,10 @@ Link::Transmit (const std::string& nodeId, const uint8_t* data, std::size_t leng
   for (it = neighbors.begin (); it != neighbors.end (); it++)
     {
       std::cout << "[Link::Transmit] dst = " << it->first
-                << ", IsConnected = " << it->second->IsConnected () << std::endl;
-      if (it->second->IsConnected ())
+                << ", LossRate = " << it->second->GetLossRate () << std::endl;
+      if (!it->second->DropPacket ())
         {
+          //std::cout << "[Link::Transmit] send to " << it->first << std::endl;
           m_nodeTable[it->first]->HandleLinkMessage (m_id, data, length);
         }
     }
@@ -36,7 +37,7 @@ Link::PrintLinkMatrix ()
       for (inner = neighbors.begin (); inner != neighbors.end (); inner++)
         {
           std::cout << "[Link::PrintLinkMatrix] from " << outer->first << " to " << inner->first
-                    << ", IsConnected = " << inner->second->IsConnected () << std::endl;
+                    << ", LossRate = " << inner->second->GetLossRate () << std::endl;
         }
     }
 }

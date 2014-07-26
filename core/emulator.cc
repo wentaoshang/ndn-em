@@ -84,8 +84,8 @@ Emulator::ReadLinkConfig (const char* path)
       else
         link = it->second;
 
-      // For now, only support m_connected flag
-      boost::shared_ptr<LinkAttribute> attr = boost::make_shared<LinkAttribute> (boost::lexical_cast<bool> (param));
+      // For now, only support packet loss rate
+      boost::shared_ptr<LinkAttribute> attr = boost::make_shared<LinkAttribute> (boost::lexical_cast<double> (param));
 
       //TODO: sanitation check
 
