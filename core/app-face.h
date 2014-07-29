@@ -1,0 +1,103 @@
+/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
+
+#ifndef __APP_FACE_H__
+#define __APP_FACE_H__
+
+#include "face.h"
+
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/utility.hpp>
+
+namespace emulator {
+
+const std::size_t MAX_NDN_PACKET_SIZE = 8800;
+
+class AppFace : public Face {
+public:
+  AppFace (const int faceId, const std::string& nodeId, boost::asio::io_service& ioService,
+           const boost::function<void (const int, const uint8_t*, std::size_t)>& nodeMessageCallback,
+           const boost::function<void (const int)>& closeFaceCallback)
+    : Face (faceId, nodeId)
+    , m_nodeMessageCallback (nodeMessageCallback)
+    , m_closeFaceCallback (closeFaceCallback)
+    , m_socket (ioService)
+  {
+  }
+
+  virtual
+  ~AppFace ()
+  {
+    // Ignore errors
+    boost::system::error_code error;
+    m_socket.close (error);
+  }
+
+  boost::asio::local::stream_protocol::socket&
+  GetSocket ()
+  {
+    return m_socket;
+  }
+
+  void
+  Start ()
+  {
+    m_socket.async_receive (boost::asio::buffer (m_inputBuffer, MAX_NDN_PACKET_SIZE), 0,
+                            boost::bind (&AppFace::HandleReceive, this, _1, _2));
+  }
+
+  virtual void
+  Send (const uint8_t* data, std::size_t length)
+  {
+    m_socket.async_send (boost::asio::buffer (data, length),
+                         boost::bind (&AppFace::HandleSend, this, _1, _2));
+  }
+
+private:
+  void
+  HandleSend (const boost::system::error_code& error, std::size_t nBytesTransforred)
+  {
+    if (error)
+      {
+        std::cerr << "[AppFace::HandleSend] (" << this->GetNodeId ()
+                  << ":" << this->GetId () << ") error = " << error.message () << std::endl;
+        //TODO: close face
+      }
+  }
+  
+  void
+  HandleReceive (const boost::system::error_code& error,
+                 std::size_t nBytesReceived)
+  {
+    if (!error)
+      {
+        //TODO: Check message is valid and complete
+
+        // Pass message to the node
+        m_nodeMessageCallback (this->GetId (), m_inputBuffer, nBytesReceived);
+
+        // Wait for next message
+        m_socket.async_receive (boost::asio::buffer (m_inputBuffer, MAX_NDN_PACKET_SIZE), 0,
+                                boost::bind (&AppFace::HandleReceive, this, _1, _2));
+      }
+    else
+      {
+        //std::cout << "[AppFace::HandleReceive] (" << this->GetNodeId ()
+        //          << ":" << this->GetId () << ") error = " << error.message () << std::endl;
+        m_closeFaceCallback (this->GetId ());
+      }
+  }
+
+private:
+  const boost::function<void (const int, const uint8_t*, std::size_t)> m_nodeMessageCallback;
+  const boost::function<void (const int)> m_closeFaceCallback;
+  boost::asio::local::stream_protocol::socket m_socket; // receive socket
+  uint8_t m_inputBuffer[MAX_NDN_PACKET_SIZE]; // receive buffer
+};
+
+} // namespace emulator
+
+#endif // __APP_FACE_H__

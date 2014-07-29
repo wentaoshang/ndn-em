@@ -11,7 +11,8 @@
 #include <boost/utility.hpp>
 #include <boost/filesystem.hpp>
 
-#include "face.h"
+#include "app-face.h"
+#include "link-face.h"
 
 namespace emulator {
 
@@ -43,20 +44,21 @@ public:
   }
 
   void
-  AddLink (const std::string& id, boost::shared_ptr<Link>& link)
-  {
-    m_linkTable[id] = link;
-  }
+  AddLink (const std::string&, boost::shared_ptr<Link>&);
 
   void
   Start ();
 
   void
-  HandleLinkMessage (const std::string&, const uint8_t*, std::size_t);
+  HandleLinkMessage (const std::string& linkId, const uint8_t* data, std::size_t length)
+  {
+    int faceId = m_linkTable[linkId];
+    this->HandleFaceMessage (faceId, data, length);
+  }
 
 private:
   void
-  HandleAccept (const boost::shared_ptr<Face>&,
+  HandleAccept (const boost::shared_ptr<AppFace>&,
                 const boost::system::error_code&);
 
   void
@@ -72,13 +74,11 @@ private:
   boost::asio::local::stream_protocol::acceptor m_acceptor; // local listening socket
   bool m_isListening;
 
-  // Face table maintains connections from local apps through unix socket
   int m_faceCounter;
   std::map<int, boost::shared_ptr<Face> > m_faceTable;
 
-  // Link table maintains physical links the node is attached to
-  std::map<std::string, boost::shared_ptr<Link> > m_linkTable;
-
+  // Map from link id to local face id
+  std::map<std::string, int> m_linkTable;
   //TODO: implement PIT, FIB and CS
 };
 

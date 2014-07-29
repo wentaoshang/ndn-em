@@ -9,7 +9,7 @@ void
 Link::Transmit (const std::string& nodeId, const uint8_t* data, std::size_t length)
 {
   std::string msg (reinterpret_cast<const char*> (data), length);
-  std::cout << "[Link::Transmit] src = " << nodeId << ": " << msg << std::endl;
+  std::cout << "[Link::Transmit] (" << nodeId << ") : " << msg << std::endl;
 
   // Transmit to other nodes on the link according to link attribute matrix
   std::map<std::string, boost::shared_ptr<LinkAttribute> >& neighbors = m_linkMatrix[nodeId];
