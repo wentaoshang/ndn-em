@@ -3,6 +3,10 @@
 #include "link.h"
 #include "node.h"
 
+#include <ndn-cxx/encoding/block.hpp>
+#include <ndn-cxx/interest.hpp>
+#include <ndn-cxx/data.hpp>
+
 namespace emulator {
 
 Node::~Node ()
@@ -83,21 +87,80 @@ Node::AddLink (const std::string& linkId, boost::shared_ptr<Link>& link)
 void
 Node::HandleFaceMessage (const int faceId, const uint8_t* data, std::size_t length)
 {
-  std::string msg (reinterpret_cast<const char*> (data), length);
-  std::cout << "[Node::HandleFaceMessage] (" << m_id << ":" << faceId << ") : " << msg << std::endl;
-
-  //TODO: implement PIT, CS & FIB
-
-  // For now, broadcast to all faces
-  // except the face where the data is received
-  std::map<int, boost::shared_ptr<Face> >::iterator it_face;
-  for (it_face = m_faceTable.begin (); it_face != m_faceTable.end (); it_face++)
+  // Try to parse message data
+  bool isOk = true;
+  ndn::Block element;
+  isOk = ndn::Block::fromBuffer (data, length, element);
+  if (!isOk)
     {
-      if (it_face->first != faceId)
-        {
-          it_face->second->Send (data, length);
-        }
+      // TODO: wait for the rest of the packet
+      throw std::runtime_error ("Incomplete packet in buffer");
     }
+
+  std::set<int> outList;
+  try
+    {
+      if (element.type () == ndn::Tlv::Interest)
+        {
+          boost::shared_ptr<ndn::Interest> i = boost::make_shared<ndn::Interest> ();
+          i->wireDecode (element);
+          this->HandleInterest (faceId, i, outList);
+        }
+      else if (element.type () == ndn::Tlv::Data)
+        {
+          boost::shared_ptr<ndn::Data> d = boost::make_shared<ndn::Data> ();
+          d->wireDecode (element);
+          this->HandleData (faceId, d, outList);
+        }
+      else
+        throw std::runtime_error ("Unknown NDN packet type");
+    }
+  catch (ndn::Tlv::Error&)
+    {
+      throw std::runtime_error ("NDN packet decoding error");
+    }
+
+  // Forward to the faces listed in out face list
+  std::set<int>::iterator it;
+  for (it = outList.begin (); it != outList.end (); it++)
+    {
+      m_faceTable[*it]->Send (data, length);
+    }
+}
+
+void
+Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& i, std::set<int>& out)
+{
+  std::cout << "[Node::HandleInterest] (" << m_id << ":" << faceId << ") " << (*i) << std::endl;
+  if (m_pit.AddInterest (faceId, i))
+    {
+      //TODO: lookup FIB and construct out face list
+
+      // For now, broadcast to all faces
+      // except the face where the interest is received
+      std::map<int, boost::shared_ptr<Face> >::iterator it;
+      for (it = m_faceTable.begin (); it != m_faceTable.end (); it++)
+        {
+          if (it->first != faceId)
+            {
+              out.insert (it->first);
+            }
+        }
+
+    }
+  else
+    {
+      std::cout << "[Node::HandleInterest] (" << m_id << ":" << faceId
+                << ") Looping Interest with nonce " << i->getNonce () << " detected." << std::endl;
+    }
+
+  m_pit.Print ();
+}
+
+void
+Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d, std::set<int>& out)
+{
+  std::cout << "[Node::HandleData] (" << m_id << ":" << faceId << ") " << (*d) << std::endl;
 }
 
 void

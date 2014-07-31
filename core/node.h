@@ -10,9 +10,12 @@
 #include <boost/make_shared.hpp>
 #include <boost/utility.hpp>
 #include <boost/filesystem.hpp>
+#include <map>
+#include <set>
 
 #include "app-face.h"
 #include "link-face.h"
+#include "pit.h"
 
 namespace emulator {
 
@@ -23,6 +26,7 @@ public:
     : m_id (id)
     , m_socketPath (socketPath)
     , m_endpoint (m_socketPath)
+    , m_ioService (ioService)
     , m_acceptor (ioService)
     , m_isListening (false)
     , m_faceCounter (0)
@@ -65,12 +69,19 @@ private:
   HandleFaceMessage (const int, const uint8_t*, std::size_t);
 
   void
+  HandleInterest (const int, const boost::shared_ptr<ndn::Interest>&, std::set<int>&);
+
+  void
+  HandleData (const int, const boost::shared_ptr<ndn::Data>&, std::set<int>&);
+
+  void
   RemoveFace (const int);
 
 private:
   std::string m_id; // node id
   std::string m_socketPath; // unix domain socket path
   boost::asio::local::stream_protocol::endpoint m_endpoint; // local listening endpoint
+  boost::asio::io_service& m_ioService;
   boost::asio::local::stream_protocol::acceptor m_acceptor; // local listening socket
   bool m_isListening;
 
@@ -79,7 +90,11 @@ private:
 
   // Map from link id to local face id
   std::map<std::string, int> m_linkTable;
-  //TODO: implement PIT, FIB and CS
+
+  // PIT
+  node::Pit m_pit;
+
+  //TODO: implement CS and FIB
 };
 
 } // namespace emulator

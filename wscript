@@ -30,6 +30,9 @@ def configure(conf):
         conf.add_supported_cxxflags(cxxflags=['-O3', 
                                               '-g'])
 
+    conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'],
+                   uselib_store='NDN_CXX', mandatory=True)
+
     # conf.write_config_header('config.h')
 
     if conf.options._test:
@@ -43,17 +46,17 @@ def build (bld):
     bld(target="ndnem",
         features=["cxx", "cxxprogram"],
         source=bld.path.ant_glob(['core/*.cc']),
-        use='BOOST BOOST_SYSTEM BOOST_FILESYSTEM',
+        use='NDN_CXX BOOST BOOST_SYSTEM BOOST_FILESYSTEM',
         includes='. core'
         )
 
-    bld(target="dummy",
-        features=["cxx", "cxxprogram"],
-        source=bld.path.ant_glob(['apps/dummy-repeater.cc']),
-        use='BOOST BOOST_SYSTEM BOOST_FILESYSTEM',
-        includes='. apps'
-        )
-
+    for app in bld.path.ant_glob('apps/*.cc'):
+        bld(features=['cxx', 'cxxprogram'],
+            target='%s' % (str(app.change_ext('','.cc'))),
+            source=app,
+            use='NDN_CXX BOOST BOOST_SYSTEM BOOST_FILESYSTEM',
+            includes='. apps',
+            )
 
 @Configure.conf
 def add_supported_cxxflags(self, cxxflags):

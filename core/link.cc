@@ -8,15 +8,17 @@ namespace emulator {
 void
 Link::Transmit (const std::string& nodeId, const uint8_t* data, std::size_t length)
 {
-  std::string msg (reinterpret_cast<const char*> (data), length);
-  std::cout << "[Link::Transmit] (" << nodeId << ") : " << msg << std::endl;
+  //std::string msg (reinterpret_cast<const char*> (data), length);
+  //std::cout << "[Link::Transmit] (" << nodeId << ") : " << msg << std::endl;
+
+  //TODO: make a copy of the data into a local "pipe" buffer and implement delayed transmission
 
   // Transmit to other nodes on the link according to link attribute matrix
   std::map<std::string, boost::shared_ptr<LinkAttribute> >& neighbors = m_linkMatrix[nodeId];
   std::map<std::string, boost::shared_ptr<LinkAttribute> >::iterator it;
   for (it = neighbors.begin (); it != neighbors.end (); it++)
     {
-      std::cout << "[Link::Transmit] dst = " << it->first
+      std::cout << "[Link::Transmit] " << nodeId << " -> " << it->first
                 << ", LossRate = " << it->second->GetLossRate () << std::endl;
       if (!it->second->DropPacket ())
         {
