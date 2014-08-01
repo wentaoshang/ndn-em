@@ -31,6 +31,15 @@ Node::Start ()
   m_acceptor.listen ();
   m_isListening = true;
 
+  // Schedule clean up routine for PIT
+  m_pit.ScheduleCleanUp ();
+
+  // Setup fib manager
+  m_fibManager = boost::make_shared<FibManager>
+    (0, m_id, boost::ref (m_fib), boost::cref (m_faceTable),
+     boost::bind (&Node::HandleData, this, _1, _2));
+
+  // Wait for connection from clients
   int faceId = m_faceCounter++;
   boost::shared_ptr<AppFace> client =
     boost::make_shared<AppFace> (faceId, m_id,
@@ -97,20 +106,19 @@ Node::HandleFaceMessage (const int faceId, const uint8_t* data, std::size_t leng
       throw std::runtime_error ("Incomplete packet in buffer");
     }
 
-  std::set<int> outList;
   try
     {
       if (element.type () == ndn::Tlv::Interest)
         {
           boost::shared_ptr<ndn::Interest> i = boost::make_shared<ndn::Interest> ();
           i->wireDecode (element);
-          this->HandleInterest (faceId, i, outList);
+          this->HandleInterest (faceId, i);
         }
       else if (element.type () == ndn::Tlv::Data)
         {
           boost::shared_ptr<ndn::Data> d = boost::make_shared<ndn::Data> ();
           d->wireDecode (element);
-          this->HandleData (faceId, d, outList);
+          this->HandleData (faceId, d);
         }
       else
         throw std::runtime_error ("Unknown NDN packet type");
@@ -119,34 +127,33 @@ Node::HandleFaceMessage (const int faceId, const uint8_t* data, std::size_t leng
     {
       throw std::runtime_error ("NDN packet decoding error");
     }
-
-  // Forward to the faces listed in out face list
-  std::set<int>::iterator it;
-  for (it = outList.begin (); it != outList.end (); it++)
-    {
-      m_faceTable[*it]->Send (data, length);
-    }
 }
 
 void
-Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& i, std::set<int>& out)
+Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& i)
 {
   std::cout << "[Node::HandleInterest] (" << m_id << ":" << faceId << ") " << (*i) << std::endl;
+
+  // Record interest in PIT
   if (m_pit.AddInterest (faceId, i))
     {
       //TODO: lookup FIB and construct out face list
-
-      // For now, broadcast to all faces
-      // except the face where the interest is received
-      std::map<int, boost::shared_ptr<Face> >::iterator it;
-      for (it = m_faceTable.begin (); it != m_faceTable.end (); it++)
+      std::set<int> outList;
+      m_fib.LookUp (i->getName (), outList);
+      std::set<int>::iterator it = outList.find (0);
+      if (it != outList.end ())
         {
-          if (it->first != faceId)
-            {
-              out.insert (it->first);
-            }
+          // This interest should go to fib manager
+          m_fibManager->ProcessCommand (faceId, i);
         }
-
+      else
+        {
+          // Forward to faces
+          const ndn::Block& wire = i->wireEncode ();
+          const uint8_t* data = wire.wire ();
+          std::size_t length = wire.size ();
+          this->ForwardToFaces (data, length, outList);
+        }
     }
   else
     {
@@ -158,9 +165,15 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
 }
 
 void
-Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d, std::set<int>& out)
+Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d)
 {
-  std::cout << "[Node::HandleData] (" << m_id << ":" << faceId << ") " << (*d) << std::endl;
+  std::cout << "[Node::HandleData] (" << m_id << ":" << faceId << ") " << (*d);
+  std::set<int> outList;
+  m_pit.ConsumeInterestWithDataName (d->getName (), outList);
+  const ndn::Block& wire = d->wireEncode ();
+  const uint8_t* data = wire.wire ();
+  std::size_t length = wire.size ();
+  this->ForwardToFaces (data, length, outList);
 }
 
 void

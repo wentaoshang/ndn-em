@@ -40,13 +40,13 @@ def configure(conf):
         conf.env.TEST = 1
 
     conf.load('boost')
-    conf.check_boost(lib='system filesystem')
+    conf.check_boost(lib='system filesystem random')
 
 def build (bld):
     bld(target="ndnem",
         features=["cxx", "cxxprogram"],
         source=bld.path.ant_glob(['core/*.cc']),
-        use='NDN_CXX BOOST BOOST_SYSTEM BOOST_FILESYSTEM',
+        use='NDN_CXX BOOST BOOST_SYSTEM BOOST_FILESYSTEM BOOST_RANDOM',
         includes='. core'
         )
 
@@ -54,7 +54,7 @@ def build (bld):
         bld(features=['cxx', 'cxxprogram'],
             target='%s' % (str(app.change_ext('','.cc'))),
             source=app,
-            use='NDN_CXX BOOST BOOST_SYSTEM BOOST_FILESYSTEM',
+            use='NDN_CXX BOOST BOOST_SYSTEM BOOST_FILESYSTEM BOOST_RANDOM',
             includes='. apps',
             )
 

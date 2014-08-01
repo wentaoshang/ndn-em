@@ -16,6 +16,8 @@
 #include "app-face.h"
 #include "link-face.h"
 #include "pit.h"
+#include "fib.h"
+#include "fib-manager.h"
 
 namespace emulator {
 
@@ -29,7 +31,8 @@ public:
     , m_ioService (ioService)
     , m_acceptor (ioService)
     , m_isListening (false)
-    , m_faceCounter (0)
+    , m_faceCounter (1)  // face id 0 is reserved for fib manager
+    , m_pit (3000, ioService)  // Cleanup Pit every 3 sec
   {
   }
 
@@ -69,10 +72,21 @@ private:
   HandleFaceMessage (const int, const uint8_t*, std::size_t);
 
   void
-  HandleInterest (const int, const boost::shared_ptr<ndn::Interest>&, std::set<int>&);
+  ForwardToFaces (const uint8_t* data, std::size_t length, std::set<int>& out)
+  {
+    // Forward to the faces listed in out face list
+    std::set<int>::iterator it;
+    for (it = out.begin (); it != out.end (); it++)
+      {
+        m_faceTable[*it]->Send (data, length);
+      }
+  }
 
   void
-  HandleData (const int, const boost::shared_ptr<ndn::Data>&, std::set<int>&);
+  HandleInterest (const int, const boost::shared_ptr<ndn::Interest>&);
+
+  void
+  HandleData (const int, const boost::shared_ptr<ndn::Data>&);
 
   void
   RemoveFace (const int);
@@ -94,7 +108,12 @@ private:
   // PIT
   node::Pit m_pit;
 
-  //TODO: implement CS and FIB
+  // FIB
+  node::Fib m_fib;
+
+  boost::shared_ptr<FibManager> m_fibManager;
+
+  //TODO: implement CS
 };
 
 } // namespace emulator

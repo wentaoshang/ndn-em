@@ -3,15 +3,18 @@
 #ifndef __PIT_H__
 #define __PIT_H__
 
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
 #include <boost/chrono/system_clocks.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/functional/hash.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <ndn-cxx/interest.hpp>
 #include <map>
 #include <set>
 #include <iostream>
+
+#include "ndn-name-hash.h"
 
 namespace emulator {
 namespace node {
@@ -63,20 +66,14 @@ private:
   std::map<uint32_t, FaceRecord> m_nonceTable;
 };
 
-struct ndn_name_hash
-  : std::unary_function<ndn::Name, std::size_t>
-{
-  std::size_t operator() (const ndn::Name& n) const
-  {
-    const ndn::Block& b = n.wireEncode ();
-    const uint8_t* wire = b.wire ();
-    std::size_t size = b.size ();
-    return boost::hash_range (wire, wire + size);
-  }
-};
-
 class Pit {
 public:
+  Pit (long interval, boost::asio::io_service& ioService)
+    : m_cleanupInterval (boost::posix_time::milliseconds (interval))
+    , m_cleanupTimer (ioService)
+  {
+  }
+
   typedef boost::unordered_map<ndn::Name, boost::shared_ptr<PitEntry>, ndn_name_hash> pit_type;
 
   bool
@@ -135,6 +132,12 @@ public:
   void
   Print ()
   {
+    if (m_pit.empty ())
+      {
+        std::cout << "[Pit::Print] empty table" << std::endl;
+        return;
+      }
+
     std::cout << "[Pit::Print]" << std::endl;
     pit_type::iterator it;
     for (it = m_pit.begin (); it != m_pit.end (); it++)
@@ -151,8 +154,59 @@ public:
       }
   }
 
+  void
+  ScheduleCleanUp ()
+  {
+    m_cleanupTimer.expires_from_now (m_cleanupInterval);
+    m_cleanupTimer.async_wait (boost::bind (&Pit::CleanUp, this, _1));
+  }
+
+private:
+  void
+  CleanUp (const boost::system::error_code& error)
+  {
+    if (error)
+      {
+        std::cerr << "[Pit::CleanUp] error = " << error.message () << std::endl;
+        return;
+      }
+
+    boost::chrono::system_clock::time_point now =
+      boost::chrono::system_clock::now ();
+
+    pit_type::iterator it = m_pit.begin ();
+    while (it != m_pit.end ())
+      {
+        std::map<uint32_t, FaceRecord>::iterator nit
+          = it->second->m_nonceTable.begin ();
+        while (nit != it->second->m_nonceTable.end ())
+          {
+            if (nit->second.expire < now)
+              {
+                // Already expired
+                nit = it->second->m_nonceTable.erase (nit);
+              }
+            else
+              nit++;
+          }
+
+        if (it->second->m_nonceTable.empty ())
+          {
+            // Nonce table is empty now. Remove pending interest
+            it = m_pit.erase (it);
+          }
+        else
+          it++;
+      }
+
+    // Schedule the next cleanup
+    ScheduleCleanUp ();
+  }
+
 private:
   boost::unordered_map<ndn::Name, boost::shared_ptr<PitEntry>, ndn_name_hash> m_pit;
+  boost::posix_time::time_duration m_cleanupInterval;
+  boost::asio::deadline_timer m_cleanupTimer;
 };
 
 } // namespace node
