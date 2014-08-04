@@ -23,9 +23,7 @@ public:
     i.setInterestLifetime (ndn::time::seconds(1));
     i.setMustBeFresh (true);
 
-    m_face.expressInterest(i,
-                           ndn::bind (&SimpleConsumer::HandleData, this, _1, _2),
-                           ndn::bind (&SimpleConsumer::HandleTimeout, this, _1));
+    this->SendInterest ();
 
     // ioService.run() will block until all events finished or ioService.stop() is called
     m_ioService.run();
@@ -43,10 +41,6 @@ private:
   HandleTimeout (const ndn::Interest& interest)
   {
     std::cout << "Timeout" << std::endl;
-
-    // Schedule a new event
-    m_scheduler.scheduleEvent (m_delay,
-                               ndn::bind (&SimpleConsumer::SendInterest, this));
   }
 
   void
@@ -62,6 +56,10 @@ private:
     m_face.expressInterest (i,
                             ndn::bind (&SimpleConsumer::HandleData, this, _1, _2),
                             ndn::bind (&SimpleConsumer::HandleTimeout, this, _1));
+
+    // Schedule a new event
+    m_scheduler.scheduleEvent (m_delay,
+                               ndn::bind (&SimpleConsumer::SendInterest, this));
   }
 
 private:
