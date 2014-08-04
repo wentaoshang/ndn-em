@@ -24,24 +24,22 @@ public:
 
     // Create new name, based on Interest's name
     Name dataName (interest.getName ());
-    dataName
-      .append("123") // add "testApp" component to Interest name
-      .appendVersion();  // add "version" component (current UNIX timestamp in milliseconds)
+    dataName.append("123").appendVersion();
 
     static const std::string content = "HELLO KITTY";
 
     // Create Data packet
-    Data data;
-    data.setName (dataName);
-    data.setFreshnessPeriod (time::seconds(10));
-    data.setContent (reinterpret_cast<const uint8_t*> (content.c_str ()), content.size ());
+    shared_ptr<Data> data (make_shared<Data> ());
+    data->setName (dataName);
+    data->setFreshnessPeriod (time::seconds(10));
+    data->setContent (reinterpret_cast<const uint8_t*> (content.c_str ()), content.size ());
 
     // Sign Data packet with default identity
-    m_keyChain.sign (data);
+    m_keyChain.sign (*data);
 
     // Return Data packet to the requester
-    std::cout << ">> D: " << data << std::endl;
-    m_face.put (data);
+    std::cout << ">> D: " << *data;
+    m_face.put (*data);
   }
 
   void

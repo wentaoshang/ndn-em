@@ -3,7 +3,6 @@
 #include "link.h"
 #include "node.h"
 
-#include <ndn-cxx/encoding/block.hpp>
 #include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/data.hpp>
 
@@ -44,7 +43,7 @@ Node::Start ()
   boost::shared_ptr<AppFace> client =
     boost::make_shared<AppFace> (faceId, m_id,
                                  boost::ref (m_acceptor.get_io_service ()),
-                                 boost::bind (&Node::HandleFaceMessage, this, _1, _2, _3),
+                                 boost::bind (&Node::HandleFaceMessage, this, _1, _2),
                                  boost::bind (&Node::RemoveFace, this, _1));
 
   m_acceptor.async_accept (client->GetSocket (),
@@ -60,7 +59,7 @@ Node::HandleAccept (const boost::shared_ptr<AppFace>& face,
   boost::shared_ptr<AppFace> next =
     boost::make_shared<AppFace> (faceId, m_id,
                                  boost::ref (m_acceptor.get_io_service ()),
-                                 boost::bind (&Node::HandleFaceMessage, this, _1, _2, _3),
+                                 boost::bind (&Node::HandleFaceMessage, this, _1, _2),
                                  boost::bind (&Node::RemoveFace, this, _1));
 
   m_acceptor.async_accept (next->GetSocket (),
@@ -91,21 +90,33 @@ Node::AddLink (const std::string& linkId, boost::shared_ptr<Link>& link)
 }
 
 /**
- * Handle message received from local face
+ * Handle message received from link
  */
 void
-Node::HandleFaceMessage (const int faceId, const uint8_t* data, std::size_t length)
+Node::HandleLinkMessage (const std::string& linkId, const uint8_t* data, std::size_t length)
 {
+  int faceId = m_linkTable[linkId];
   // Try to parse message data
   bool isOk = true;
   ndn::Block element;
   isOk = ndn::Block::fromBuffer (data, length, element);
   if (!isOk)
     {
-      // TODO: wait for the rest of the packet
       throw std::runtime_error ("Incomplete packet in buffer");
     }
 
+  this->HandleFaceMessage (faceId, element);
+}
+
+
+/**
+ * Handle message received from local face
+ */
+void
+Node::HandleFaceMessage (const int faceId, const ndn::Block& element)
+{
+  //std::cout << "[Node::HandleFaceMessage] (" << m_id << ":" << faceId
+  //          << ") element type = " << element.type () << std::endl;
   try
     {
       if (element.type () == ndn::Tlv::Interest)
@@ -140,6 +151,27 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
       //TODO: lookup FIB and construct out face list
       std::set<int> outList;
       m_fib.LookUp (i->getName (), outList);
+      if (outList.empty ())
+        {
+          //std::cerr << "[Node::HandleInterest] (" << m_id << ":" << faceId
+          //          << ") no route to name " << i->getName () << std::endl;
+
+          // If there is no route for the interest, broadcast to all faces
+          // except the one where the interest comes from
+          const ndn::Block& wire = i->wireEncode ();
+          const uint8_t* data = wire.wire ();
+          std::size_t length = wire.size ();
+          std::map<int, boost::shared_ptr<Face> >::iterator it;
+          for (it = m_faceTable.begin (); it != m_faceTable.end (); it++)
+            {
+              if (it->first != faceId)
+                {
+                  it->second->Send (data, length);
+                }
+            }
+          return;
+        }
+
       std::set<int>::iterator it = outList.find (0);
       if (it != outList.end ())
         {
@@ -161,7 +193,7 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
                 << ") Looping Interest with nonce " << i->getNonce () << " detected." << std::endl;
     }
 
-  m_pit.Print ();
+  //m_pit.Print ();
 }
 
 void
@@ -179,8 +211,9 @@ Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d)
 void
 Node::RemoveFace (const int faceId)
 {
-  //std::cout << "[Node::RemoveFace] id = " << m_id << ": remove face " << faceId << std::endl;
+  std::cout << "[Node::RemoveFace] id = " << m_id << ": remove face " << faceId << std::endl;
   m_faceTable.erase (faceId);
+  m_fibManager->CleanUpFib (faceId);
 }
 
 } // namespace emulator

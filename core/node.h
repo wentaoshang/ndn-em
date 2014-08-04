@@ -57,11 +57,7 @@ public:
   Start ();
 
   void
-  HandleLinkMessage (const std::string& linkId, const uint8_t* data, std::size_t length)
-  {
-    int faceId = m_linkTable[linkId];
-    this->HandleFaceMessage (faceId, data, length);
-  }
+  HandleLinkMessage (const std::string&, const uint8_t*, std::size_t);
 
 private:
   void
@@ -69,7 +65,7 @@ private:
                 const boost::system::error_code&);
 
   void
-  HandleFaceMessage (const int, const uint8_t*, std::size_t);
+  HandleFaceMessage (const int, const ndn::Block&);
 
   void
   ForwardToFaces (const uint8_t* data, std::size_t length, std::set<int>& out)

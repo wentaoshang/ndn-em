@@ -18,11 +18,29 @@ public:
   typedef boost::unordered_map<ndn::Name, std::set<int>, ndn_name_hash> fib_type;
 
   void
-  AddRoute (const ndn::Name& prefix, int faceId)
+  AddRoute (const ndn::Name& prefix, const int faceId)
   {
     m_fib[prefix].insert (faceId);
 
     //TODO: inherit from parent prefixes
+  }
+
+  void
+  CleanUp (const int faceId)
+  {
+    fib_type::iterator it = m_fib.begin ();
+    while (it != m_fib.end ())
+      {
+        it->second.erase (faceId);
+        if (it->second.empty ())
+          {
+            it = m_fib.erase (it);
+          }
+        else
+          {
+            it++;
+          }
+      }
   }
 
   void
@@ -44,6 +62,13 @@ public:
           {
             // Found match, stop now and copy all faces to "out"
             std::set<int>& faces = it->second;
+            std::cout << "[Fib::LookUp] " << name << " ->";
+            std::set<int>::iterator fit;
+            for (fit = faces.begin (); fit != faces.end (); fit++)
+              {
+                std::cout << " " << *fit;
+              }
+            std::cout << std::endl;
             out.insert (faces.begin (), faces.end ());
           }
       }

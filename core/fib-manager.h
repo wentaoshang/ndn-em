@@ -63,6 +63,15 @@ public:
       }
   }
 
+  /*
+   * Remove the face id from all relevant fib entries
+   */
+  void
+  CleanUpFib (const int faceId)
+  {
+    m_fib.CleanUp (faceId);
+  }
+
 private:
   void
   AddNextHop(ControlParameters& parameters,

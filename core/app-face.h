@@ -12,6 +12,8 @@
 #include <boost/make_shared.hpp>
 #include <boost/utility.hpp>
 
+#include <ndn-cxx/encoding/block.hpp>
+
 namespace emulator {
 
 const std::size_t MAX_NDN_PACKET_SIZE = 8800;
@@ -19,12 +21,13 @@ const std::size_t MAX_NDN_PACKET_SIZE = 8800;
 class AppFace : public Face {
 public:
   AppFace (const int faceId, const std::string& nodeId, boost::asio::io_service& ioService,
-           const boost::function<void (const int, const uint8_t*, std::size_t)>& nodeMessageCallback,
+           const boost::function<void (const int, const ndn::Block&)>& nodeMessageCallback,
            const boost::function<void (const int)>& closeFaceCallback)
     : Face (faceId, nodeId)
     , m_nodeMessageCallback (nodeMessageCallback)
     , m_closeFaceCallback (closeFaceCallback)
     , m_socket (ioService)
+    , m_inputBufferSize (0)
   {
   }
 
@@ -74,14 +77,48 @@ private:
   {
     if (!error)
       {
-        //TODO: Check message is valid and complete
+        // Try to parse message data
+        m_inputBufferSize += nBytesReceived;
 
-        // Pass message to the node
-        m_nodeMessageCallback (this->GetId (), m_inputBuffer, nBytesReceived);
+        std::size_t offset = 0;
 
-        // Wait for next message
-        m_socket.async_receive (boost::asio::buffer (m_inputBuffer, MAX_NDN_PACKET_SIZE), 0,
+        bool isOk = true;
+        ndn::Block element;
+        while (m_inputBufferSize - offset > 0)
+          {
+            isOk = ndn::Block::fromBuffer (m_inputBuffer + offset, m_inputBufferSize - offset, element);
+            if (!isOk)
+              break;
+
+            offset += element.size();
+
+            // Pass message to the node
+            m_nodeMessageCallback (this->GetId (), element);
+          }
+
+        if (!isOk && m_inputBufferSize == MAX_NDN_PACKET_SIZE && offset == 0)
+          {
+            throw std::runtime_error ("Incoming packet too large to process");
+          }
+
+        if (offset > 0)
+          {
+            if (offset != m_inputBufferSize)
+              {
+                std::copy (m_inputBuffer + offset, m_inputBuffer + m_inputBufferSize,
+                           m_inputBuffer);
+                m_inputBufferSize -= offset;
+              }
+            else
+              {
+                m_inputBufferSize = 0;
+              }
+          }
+
+        m_socket.async_receive (boost::asio::buffer (m_inputBuffer + m_inputBufferSize,
+                                                     MAX_NDN_PACKET_SIZE - m_inputBufferSize), 0,
                                 boost::bind (&AppFace::HandleReceive, this, _1, _2));
+
       }
     else
       {
@@ -92,10 +129,11 @@ private:
   }
 
 private:
-  const boost::function<void (const int, const uint8_t*, std::size_t)> m_nodeMessageCallback;
+  const boost::function<void (const int, const ndn::Block&)> m_nodeMessageCallback;
   const boost::function<void (const int)> m_closeFaceCallback;
   boost::asio::local::stream_protocol::socket m_socket; // receive socket
   uint8_t m_inputBuffer[MAX_NDN_PACKET_SIZE]; // receive buffer
+  std::size_t m_inputBufferSize;
 };
 
 } // namespace emulator
