@@ -1,0 +1,7 @@
+; NodeID UnixPath AppName
+n0 /tmp/node0 abcd
+n1 /tmp/node1 abcd
+n2 /tmp/node2 abcd
+n3 /tmp/node3 abcd
+n4 /tmp/node4 abcd
+n5 /tmp/node5 abcd

@@ -1,0 +1,17 @@
+      -------
+      |link0|
+      -------
+      /  |  \      consumer
+     /   |   \     /
+    /    |    \   /
+ node0  node1  node2
+                |
+		|               producer
+		|                  |
+	      -------              |
+              |link1|    node4   node5
+	      -------      \     /
+	         |          \   /
+		 |         -------
+	       node3 ------|link2|
+	                   -------
