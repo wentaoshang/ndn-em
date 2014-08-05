@@ -32,7 +32,7 @@ public:
     , m_acceptor (ioService)
     , m_isListening (false)
     , m_faceCounter (1)  // face id 0 is reserved for fib manager
-    , m_pit (3000, ioService)  // Cleanup Pit every 3 sec
+    , m_pit (10000, ioService)  // Cleanup Pit every 10 sec
   {
   }
 
@@ -74,7 +74,13 @@ private:
     std::set<int>::iterator it;
     for (it = out.begin (); it != out.end (); it++)
       {
-        m_faceTable[*it]->Send (data, length);
+        // Check whether the face still exists
+        // It is possible that the face sent an
+        // interest and then crashes. There is no
+        // mechanism to remove dead faces from PIT.
+        std::map<int, boost::shared_ptr<Face> >::iterator fit = m_faceTable.find (*it);
+        if (fit != m_faceTable.end ())
+          fit->second->Send (data, length);
       }
   }
 
