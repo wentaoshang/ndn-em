@@ -32,9 +32,10 @@ public:
 
 class CacheManager {
 public:
-  CacheManager (int limit, long interval,
+  CacheManager (const std::string& nodeId, int limit, long interval,
 		boost::asio::io_service& ioService)
-    : m_count (0)
+    : m_nodeId (nodeId)
+    , m_count (0)
     , m_limit (limit)
     , m_cleanupInterval (boost::posix_time::milliseconds (interval))
     , m_cleanupTimer (ioService)
@@ -62,6 +63,7 @@ private:
   CleanUp (const boost::system::error_code&);
 
 private:
+  const std::string& m_nodeId;
   std::deque<CacheEntry> m_queue; // FIFO queue
   int m_count;
   const int m_limit;  // cache limit in # of bytes

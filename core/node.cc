@@ -40,7 +40,7 @@ Node::Start ()
 
   // Setup cache manager
   m_cacheManager = boost::make_shared<node::CacheManager>
-    (1000, 10000, boost::ref (m_ioService));
+    (m_id, 1000, 10000, boost::ref (m_ioService));
   m_cacheManager->ScheduleCleanUp ();
 
   // Wait for connection from clients
@@ -166,7 +166,6 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
   // Record interest in PIT
   if (m_pit.AddInterest (faceId, i))
     {
-      //TODO: lookup FIB and construct out face list
       std::set<int> outList;
       m_fib.LookUp (i->getName (), outList);
       if (outList.empty ())
@@ -221,13 +220,16 @@ Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d)
   std::set<int> outList;
   m_pit.ConsumeInterestWithDataName (d->getName (), outList);
 
-  // This is where we can perform intelligent caching
-  m_cacheManager->Insert (d);
+  if (!outList.empty ())
+    {
+      // Cache the data only when we have pending interest for it
+      m_cacheManager->Insert (d);
 
-  const ndn::Block& wire = d->wireEncode ();
-  const uint8_t* data = wire.wire ();
-  std::size_t length = wire.size ();
-  this->ForwardToFaces (data, length, outList);
+      const ndn::Block& wire = d->wireEncode ();
+      const uint8_t* data = wire.wire ();
+      std::size_t length = wire.size ();
+      this->ForwardToFaces (data, length, outList);
+    }
 }
 
 void
