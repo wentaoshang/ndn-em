@@ -25,9 +25,6 @@ public:
     size = d->wireEncode ().size ();
   }
 
-  friend class CacheManager;
-
-private:
   boost::shared_ptr<ndn::Data> data;
   size_t size;
   boost::chrono::system_clock::time_point expire;
