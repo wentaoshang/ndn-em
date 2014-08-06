@@ -34,15 +34,20 @@ Node::Start ()
   m_pit.ScheduleCleanUp ();
 
   // Setup fib manager
-  m_fibManager = boost::make_shared<FibManager>
+  m_fibManager = boost::make_shared<node::FibManager>
     (0, m_id, boost::ref (m_fib), boost::cref (m_faceTable),
      boost::bind (&Node::HandleData, this, _1, _2));
+
+  // Setup cache manager
+  m_cacheManager = boost::make_shared<node::CacheManager>
+    (1000, 10000, boost::ref (m_ioService));
+  m_cacheManager->ScheduleCleanUp ();
 
   // Wait for connection from clients
   int faceId = m_faceCounter++;
   boost::shared_ptr<AppFace> client =
     boost::make_shared<AppFace> (faceId, m_id,
-                                 boost::ref (m_acceptor.get_io_service ()),
+                                 boost::ref (m_ioService),
                                  boost::bind (&Node::HandleFaceMessage, this, _1, _2),
                                  boost::bind (&Node::RemoveFace, this, _1));
 
@@ -58,7 +63,7 @@ Node::HandleAccept (const boost::shared_ptr<AppFace>& face,
   int faceId = m_faceCounter++;
   boost::shared_ptr<AppFace> next =
     boost::make_shared<AppFace> (faceId, m_id,
-                                 boost::ref (m_acceptor.get_io_service ()),
+                                 boost::ref (m_ioService),
                                  boost::bind (&Node::HandleFaceMessage, this, _1, _2),
                                  boost::bind (&Node::RemoveFace, this, _1));
 
@@ -145,6 +150,19 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
 {
   std::cout << "[Node::HandleInterest] (" << m_id << ":" << faceId << ") " << (*i) << std::endl;
 
+  // Check cache
+  boost::shared_ptr<ndn::Data> d;
+  if (m_cacheManager->FindMatchingData (i, d))
+    {
+      std::cout << "[Node::HandleInterest] (" << m_id << ":" << faceId
+                << ") Match found in cache" << std::endl;
+      const ndn::Block& wire = d->wireEncode ();
+      const uint8_t* data = wire.wire ();
+      std::size_t length = wire.size ();
+      this->ForwardToFace (data, length, faceId);
+      return;
+    }
+
   // Record interest in PIT
   if (m_pit.AddInterest (faceId, i))
     {
@@ -202,6 +220,10 @@ Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d)
   std::cout << "[Node::HandleData] (" << m_id << ":" << faceId << ") " << (*d);
   std::set<int> outList;
   m_pit.ConsumeInterestWithDataName (d->getName (), outList);
+
+  // This is where we can perform intelligent caching
+  m_cacheManager->Insert (d);
+
   const ndn::Block& wire = d->wireEncode ();
   const uint8_t* data = wire.wire ();
   std::size_t length = wire.size ();

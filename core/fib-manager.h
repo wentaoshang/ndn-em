@@ -15,6 +15,7 @@
 #include "fib.h"
 
 namespace emulator {
+namespace node {
 
 using ndn::nfd::ControlCommand;
 using ndn::nfd::ControlResponse;
@@ -180,6 +181,7 @@ private:
   ndn::KeyChain m_keyChain;
 };
 
+} // namespace node
 } // namespace emulator
 
 #endif // __FIB_MANAGER_H__

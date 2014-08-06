@@ -18,6 +18,7 @@
 #include "pit.h"
 #include "fib.h"
 #include "fib-manager.h"
+#include "cache-manager.h"
 
 namespace emulator {
 
@@ -68,19 +69,25 @@ private:
   HandleFaceMessage (const int, const ndn::Block&);
 
   void
+  ForwardToFace (const uint8_t* data, std::size_t length, int outId)
+  {
+    // Check whether the face still exists
+    // It is possible that the face sent an
+    // interest and then crashes. There is no
+    // mechanism to remove dead faces from PIT.
+    std::map<int, boost::shared_ptr<Face> >::iterator fit = m_faceTable.find (outId);
+    if (fit != m_faceTable.end ())
+      fit->second->Send (data, length);
+  }
+
+  void
   ForwardToFaces (const uint8_t* data, std::size_t length, std::set<int>& out)
   {
     // Forward to the faces listed in out face list
     std::set<int>::iterator it;
     for (it = out.begin (); it != out.end (); it++)
       {
-        // Check whether the face still exists
-        // It is possible that the face sent an
-        // interest and then crashes. There is no
-        // mechanism to remove dead faces from PIT.
-        std::map<int, boost::shared_ptr<Face> >::iterator fit = m_faceTable.find (*it);
-        if (fit != m_faceTable.end ())
-          fit->second->Send (data, length);
+        this->ForwardToFace (data, length, *it);
       }
   }
 
@@ -113,9 +120,10 @@ private:
   // FIB
   node::Fib m_fib;
 
-  boost::shared_ptr<FibManager> m_fibManager;
+  boost::shared_ptr<node::FibManager> m_fibManager;
 
-  //TODO: implement CS
+  // CS
+  boost::shared_ptr<node::CacheManager> m_cacheManager;
 };
 
 } // namespace emulator
