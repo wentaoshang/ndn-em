@@ -1,7 +1,7 @@
 ndn-em
 ======
 
-NDN network emulator. Similar to ndnSIM but fully compatible with real NDN applications and ndn.cxx library. It emulates both physical network and NDN forwarder.
+An NDN network emulator. Similar to ndnSIM but fully compatible with real NDN applications and ndn-cxx library. It emulates both physical network and NDN forwarder and talks to real NDN applications using Unix domain socket interface.
 
 
 Getting started
@@ -31,3 +31,15 @@ Then dump the certificate and store it into /usr/local/etc/ndn/keys folder so th
 When you are running ndnem, OS X may ask you to authorize the ndnem program to access the keychain when the program tries to get the keychain for the first time. Simply allow the access so that the emulator can use your identity to sign the Data packets generated during the prefix registration process.
 
 Refer to NFD and ndn-cxx documents for more information about RIB management protocol.
+
+You can try to run the test cases inside ./scenarios folder. For example, the following command starts the emulator with the "3-swithces" topology:
+
+    ./build/ndnem ./scenario/3-swithces/nodes.txt ./scenarios/3-switches/links.txt
+
+Then you can connect the simple consumer to node 0 and let the consumer resend Interest packet every 4000 ms:
+
+    ./build/simple-consumer 4000 /tmp/node0
+
+And then connect the simple producer to node 5:
+
+    ./build/simple-producer /tmp/node5
