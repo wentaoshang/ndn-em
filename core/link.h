@@ -6,6 +6,7 @@
 #include <map>
 #include <exception>
 #include <boost/asio.hpp>
+#include <boost/chrono/system_clocks.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
@@ -16,13 +17,16 @@
 
 namespace emulator {
 
+const std::size_t LINK_MTU = 8800;  // unrealistic assumption
+
 class Node;
 
 class Link : boost::noncopyable {
 public:
   Link (const std::string& id, boost::asio::io_service& ioService)
     : m_id (id)
-    , m_ioService (ioService)
+    , m_busy (false)
+    , m_delayTimer (ioService)
   {
   }
 
@@ -30,6 +34,12 @@ public:
   GetId ()
   {
     return m_id;
+  }
+
+  bool
+  IsBusy ()
+  {
+    return m_busy;
   }
 
   void
@@ -51,11 +61,17 @@ public:
   PrintLinkMatrix ();
 
 private:
+  void
+  PostTransmit (const std::string&, std::size_t, const boost::system::error_code&);
+
+private:
   const std::string m_id; // link id
+  uint8_t m_pipe[LINK_MTU]; // link pipe
+  bool m_busy;
+  //TODO: use multiple timers for different nodes and emulate per-node delay
+  boost::asio::deadline_timer m_delayTimer;
   std::map<std::string, boost::shared_ptr<Node> > m_nodeTable; // nodes on the link
   std::map<std::string, std::map<std::string, boost::shared_ptr<LinkAttribute> > > m_linkMatrix;
-
-  boost::asio::io_service& m_ioService;
 };
 
 } // namespace emulator

@@ -110,7 +110,9 @@ Node::HandleLinkMessage (const std::string& linkId, const uint8_t* data, std::si
       throw std::runtime_error ("Incomplete packet in buffer");
     }
 
-  this->HandleFaceMessage (faceId, element);
+  //this->HandleFaceMessage (faceId, element);
+  // Execute the message callback asynchronously
+  m_ioService.post (boost::bind (&Node::HandleFaceMessage, this, faceId, element));
 }
 
 
