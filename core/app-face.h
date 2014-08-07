@@ -65,8 +65,8 @@ private:
   {
     if (error)
       {
-        std::cerr << "[AppFace::HandleSend] (" << this->GetNodeId ()
-                  << ":" << this->GetId () << ") error = " << error.message () << std::endl;
+        std::cerr << "[AppFace::HandleSend] (" << m_nodeId
+                  << ":" << m_id << ") error = " << error.message () << std::endl;
         //TODO: close face
       }
   }
@@ -93,7 +93,7 @@ private:
             offset += element.size();
 
             // Pass message to the node
-            m_nodeMessageCallback (this->GetId (), element);
+            m_nodeMessageCallback (m_id, element);
           }
 
         if (!isOk && m_inputBufferSize == MAX_NDN_PACKET_SIZE && offset == 0)
@@ -122,9 +122,9 @@ private:
       }
     else
       {
-        //std::cout << "[AppFace::HandleReceive] (" << this->GetNodeId ()
-        //          << ":" << this->GetId () << ") error = " << error.message () << std::endl;
-        m_closeFaceCallback (this->GetId ());
+        //std::cout << "[AppFace::HandleReceive] (" << m_nodeId
+        //          << ":" << m_id << ") error = " << error.message () << std::endl;
+        m_closeFaceCallback (m_id);
       }
   }
 

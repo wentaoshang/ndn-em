@@ -14,7 +14,7 @@ public:
     : Face (faceId, nodeId)
     , m_linkMessageCallback (linkMessageCallback)
   {
-    std::cout << "[LinkFace::LinkFace] (" << nodeId << ":" << faceId << ")" << std::endl;
+    std::cout << "[LinkFace::LinkFace] (" << m_nodeId << ":" << m_id << ")" << std::endl;
   }
 
   virtual void

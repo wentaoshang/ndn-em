@@ -41,7 +41,7 @@ public:
   virtual void
   Send (const uint8_t* data, std::size_t length) = 0;
 
-private:
+protected:
   const int m_id;  // face id
   const std::string& m_nodeId;  // node id
 };
