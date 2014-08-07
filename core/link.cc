@@ -25,7 +25,8 @@ Link::Transmit (const std::string& nodeId, const uint8_t* data, std::size_t leng
 
   // Schedule delayed transmission
   //TODO: implement per-node delay based on tx rate
-  m_delayTimer.expires_from_now (boost::posix_time::milliseconds (50));
+  long delay = static_cast<long> ((static_cast<double> (length) * 8.0 * 1000.0 / (m_txRate * 1024.0)));
+  m_delayTimer.expires_from_now (boost::posix_time::milliseconds (delay));
   m_delayTimer.async_wait
     (boost::bind (&Link::PostTransmit, this, boost::cref (nodeId), length, _1));
 }

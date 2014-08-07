@@ -26,6 +26,7 @@ public:
   Link (const std::string& id, boost::asio::io_service& ioService)
     : m_id (id)
     , m_busy (false)
+    , m_txRate (250.0) // 250 kbit/s
     , m_delayTimer (ioService)
   {
   }
@@ -68,6 +69,7 @@ private:
   const std::string m_id; // link id
   uint8_t m_pipe[LINK_MTU]; // link pipe
   bool m_busy;
+  double m_txRate; // in kbit/s
   //TODO: use multiple timers for different nodes and emulate per-node delay
   boost::asio::deadline_timer m_delayTimer;
   std::map<std::string, boost::shared_ptr<Node> > m_nodeTable; // nodes on the link
