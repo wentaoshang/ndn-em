@@ -27,7 +27,7 @@ def configure(conf):
                                               '-Qunused-arguments'         # only clang supports
                                               ])
     else:
-        conf.add_supported_cxxflags(cxxflags=['-O3', 
+        conf.add_supported_cxxflags(cxxflags=['-O3',
                                               '-g'])
 
     conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'],

@@ -3,14 +3,13 @@
 #ifndef __FACE_H__
 #define __FACE_H__
 
-#include <boost/asio.hpp>
-#include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/utility.hpp>
 
 #include <ndn-cxx/encoding/block.hpp>
+
+#include "packet.h"
 
 namespace emulator {
 
@@ -31,19 +30,19 @@ public:
   }
 
   int
-  GetId ()
+  GetId () const
   {
     return m_id;
   }
 
   const std::string&
-  GetNodeId ()
+  GetNodeId () const
   {
     return m_nodeId;
   }
 
   virtual void
-  Send (const uint8_t* data, std::size_t length) = 0;
+  Send (const boost::shared_ptr<Packet>&) = 0;
 
 protected:
   const int m_id;  // face id

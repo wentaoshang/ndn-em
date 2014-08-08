@@ -48,8 +48,10 @@ public:
   }
 
   virtual void
-  Send (const uint8_t* data, std::size_t length)
+  Send (const boost::shared_ptr<Packet>& pkt)
   {
+    const uint8_t* data = pkt->GetBytes ();
+    std::size_t length = pkt->GetLength ();
     m_socket.async_send (boost::asio::buffer (data, length),
                          boost::bind (&AppFace::HandleSend, this, _1, _2));
   }

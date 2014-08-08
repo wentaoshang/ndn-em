@@ -21,13 +21,20 @@ public:
             boost::asio::io_service& ioService);
 
   const std::string&
-  GetLinkId ();
+  GetLinkId () const;
 
   void
   HandleLinkMessage (const uint8_t* data, std::size_t length);
 
   virtual void
-  Send (const uint8_t* data, std::size_t length);
+  Send (const boost::shared_ptr<Packet>&);
+
+  // CSMA/CA constants
+  static const int SYMBOL_TIME;
+  static const int BACKOFF_PERIOD;
+  static const int MIN_BE;
+  static const int MAX_BE;
+  static const int MAX_CSMA_BACKOFFS;
 
 private:
   const std::string& m_linkId;

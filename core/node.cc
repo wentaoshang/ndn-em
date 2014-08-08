@@ -114,13 +114,13 @@ Node::HandleFaceMessage (const int faceId, const ndn::Block& element)
     {
       if (element.type () == ndn::Tlv::Interest)
         {
-          boost::shared_ptr<ndn::Interest> i = boost::make_shared<ndn::Interest> ();
+          boost::shared_ptr<ndn::Interest> i (boost::make_shared<ndn::Interest> ());
           i->wireDecode (element);
           this->HandleInterest (faceId, i);
         }
       else if (element.type () == ndn::Tlv::Data)
         {
-          boost::shared_ptr<ndn::Data> d = boost::make_shared<ndn::Data> ();
+          boost::shared_ptr<ndn::Data> d (boost::make_shared<ndn::Data> ());
           d->wireDecode (element);
           this->HandleData (faceId, d);
         }
@@ -144,10 +144,8 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
     {
       std::cout << "[Node::HandleInterest] (" << m_id << ":" << faceId
                 << ") Match found in cache" << std::endl;
-      const ndn::Block& wire = d->wireEncode ();
-      const uint8_t* data = wire.wire ();
-      std::size_t length = wire.size ();
-      this->ForwardToFace (data, length, faceId);
+      const boost::shared_ptr<Packet> pkt (boost::make_shared<DataPacket> (d));
+      this->ForwardToFace (pkt, faceId);
       return;
     }
 
@@ -163,15 +161,13 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
 
           // If there is no route for the interest, broadcast to all faces
           // except the one where the interest comes from
-          const ndn::Block& wire = i->wireEncode ();
-          const uint8_t* data = wire.wire ();
-          std::size_t length = wire.size ();
+          boost::shared_ptr<Packet> pkt (boost::make_shared<InterestPacket> (i));
           std::map<int, boost::shared_ptr<Face> >::iterator it;
           for (it = m_faceTable.begin (); it != m_faceTable.end (); it++)
             {
               if (it->first != faceId)
                 {
-                  it->second->Send (data, length);
+                  it->second->Send (pkt);
                 }
             }
           return;
@@ -186,10 +182,8 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
       else
         {
           // Forward to faces
-          const ndn::Block& wire = i->wireEncode ();
-          const uint8_t* data = wire.wire ();
-          std::size_t length = wire.size ();
-          this->ForwardToFaces (data, length, outList);
+          boost::shared_ptr<Packet> pkt (boost::make_shared<InterestPacket> (i));
+          this->ForwardToFaces (pkt, outList);
         }
     }
   else
@@ -213,10 +207,8 @@ Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d)
       // Cache the data only when we have pending interest for it
       m_cacheManager->Insert (d);
 
-      const ndn::Block& wire = d->wireEncode ();
-      const uint8_t* data = wire.wire ();
-      std::size_t length = wire.size ();
-      this->ForwardToFaces (data, length, outList);
+      boost::shared_ptr<Packet> pkt (boost::make_shared<DataPacket> (d));
+      this->ForwardToFaces (pkt, outList);
     }
 }
 

@@ -66,7 +66,7 @@ private:
   HandleFaceMessage (const int, const ndn::Block&);
 
   void
-  ForwardToFace (const uint8_t* data, std::size_t length, int outId)
+  ForwardToFace (const boost::shared_ptr<Packet>& pkt, int outId)
   {
     // Check whether the face still exists
     // It is possible that the face sent an
@@ -74,17 +74,17 @@ private:
     // mechanism to remove dead faces from PIT.
     std::map<int, boost::shared_ptr<Face> >::iterator fit = m_faceTable.find (outId);
     if (fit != m_faceTable.end ())
-      fit->second->Send (data, length);
+      fit->second->Send (pkt);
   }
 
   void
-  ForwardToFaces (const uint8_t* data, std::size_t length, std::set<int>& out)
+  ForwardToFaces (const boost::shared_ptr<Packet>& pkt, std::set<int>& out)
   {
     // Forward to the faces listed in out face list
     std::set<int>::iterator it;
     for (it = out.begin (); it != out.end (); it++)
       {
-        this->ForwardToFace (data, length, *it);
+        this->ForwardToFace (pkt, *it);
       }
   }
 
