@@ -10,13 +10,17 @@
 #include <boost/make_shared.hpp>
 #include <boost/utility.hpp>
 
+#include <ndn-cxx/encoding/block.hpp>
+
 namespace emulator {
 
 class Face : boost::noncopyable {
 public:
-  Face (const int faceId, const std::string& nodeId)
+  Face (const int faceId, const std::string& nodeId,
+        const boost::function<void (const int, const ndn::Block&)>& nodeMessageCallback)
     : m_id (faceId)
     , m_nodeId (nodeId)
+    , m_nodeMessageCallback (nodeMessageCallback)
   {
   }
 
@@ -44,6 +48,7 @@ public:
 protected:
   const int m_id;  // face id
   const std::string& m_nodeId;  // node id
+  const boost::function<void (const int, const ndn::Block&)> m_nodeMessageCallback;
 };
 
 } // namespace emulator

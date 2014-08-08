@@ -1,5 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
 
+#include "link-face.h"
 #include "link.h"
 #include "node.h"
 
@@ -76,45 +77,30 @@ Node::HandleAccept (const boost::shared_ptr<AppFace>& face,
   face->Start ();
 }
 
-void
-Node::AddLink (const std::string& linkId, boost::shared_ptr<Link>& link)
+bool
+Node::AddLink (boost::shared_ptr<Link>& link, boost::shared_ptr<LinkFace>& out)
 {
+  const std::string& linkId = link->GetId ();
+
   if (m_linkTable.find (linkId) != m_linkTable.end ())
-    return;
+    return false;
 
   int faceId = m_faceCounter++;
   boost::shared_ptr<LinkFace> face =
     boost::make_shared<LinkFace> (faceId, m_id,
-                                  boost::bind (&Link::Transmit, link, _1, _2, _3));
+                                  boost::bind (&Node::HandleFaceMessage, this, _1, _2),
+                                  link, boost::ref (m_ioService));
 
   // Add link face to face table
   m_faceTable[faceId] = face;
 
+  out = face;
+
   // Add link id to link table
   m_linkTable[linkId] = faceId;
+
+  return true;
 }
-
-/**
- * Handle message received from link
- */
-void
-Node::HandleLinkMessage (const std::string& linkId, const uint8_t* data, std::size_t length)
-{
-  int faceId = m_linkTable[linkId];
-  // Try to parse message data
-  bool isOk = true;
-  ndn::Block element;
-  isOk = ndn::Block::fromBuffer (data, length, element);
-  if (!isOk)
-    {
-      throw std::runtime_error ("Incomplete packet in buffer");
-    }
-
-  //this->HandleFaceMessage (faceId, element);
-  // Execute the message callback asynchronously
-  m_ioService.post (boost::bind (&Node::HandleFaceMessage, this, faceId, element));
-}
-
 
 /**
  * Handle message received from local face

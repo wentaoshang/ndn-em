@@ -5,6 +5,7 @@
 
 #include <map>
 
+#include "link-face.h"
 #include "link.h"
 #include "node.h"
 

@@ -1,5 +1,6 @@
 .waf-*
 .lock*
+*.pyc
 .DS_Store
 
 build

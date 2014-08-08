@@ -51,14 +51,11 @@ public:
     return m_socketPath;
   }
 
-  void
-  AddLink (const std::string&, boost::shared_ptr<Link>&);
+  bool
+  AddLink (boost::shared_ptr<Link>&, boost::shared_ptr<LinkFace>&);
 
   void
   Start ();
-
-  void
-  HandleLinkMessage (const std::string&, const uint8_t*, std::size_t);
 
 private:
   void

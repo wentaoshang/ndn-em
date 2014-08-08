@@ -19,7 +19,7 @@ namespace emulator {
 
 const std::size_t LINK_MTU = 8800;  // unrealistic assumption
 
-class Node;
+class LinkFace;
 
 class Link : boost::noncopyable {
 public:
@@ -44,13 +44,11 @@ public:
   }
 
   void
-  AddNode (const std::string& id, boost::shared_ptr<Node>& node)
-  {
-    m_nodeTable[id] = node;
-  }
+  AddNode (boost::shared_ptr<LinkFace>&);
 
   void
-  AddConnection (const std::string& from, const std::string& to, boost::shared_ptr<LinkAttribute>& attr)
+  AddConnection (const std::string& from, const std::string& to,
+                 boost::shared_ptr<LinkAttribute>& attr)
   {
     m_linkMatrix[from][to] = attr;
   }
@@ -72,7 +70,7 @@ private:
   double m_txRate; // in kbit/s
   //TODO: use multiple timers for different nodes and emulate per-node delay
   boost::asio::deadline_timer m_delayTimer;
-  std::map<std::string, boost::shared_ptr<Node> > m_nodeTable; // nodes on the link
+  std::map<std::string, boost::shared_ptr<LinkFace> > m_nodeTable; // nodes on the link
   std::map<std::string, std::map<std::string, boost::shared_ptr<LinkAttribute> > > m_linkMatrix;
 };
 

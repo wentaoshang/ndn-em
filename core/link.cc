@@ -1,9 +1,16 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
 
+#include "link-face.h"
 #include "link.h"
-#include "node.h"
 
 namespace emulator {
+
+void
+Link::AddNode (boost::shared_ptr<LinkFace>& node)
+{
+  const std::string& id = node->GetNodeId ();
+  m_nodeTable[id] = node;
+}
 
 void
 Link::Transmit (const std::string& nodeId, const uint8_t* data, std::size_t length)
@@ -20,7 +27,7 @@ Link::Transmit (const std::string& nodeId, const uint8_t* data, std::size_t leng
   m_busy = true;
 
   // Make a copy of the data into a local "pipe" buffer
-  assert (length <= MAX_NDN_PACKET_SIZE);
+  assert (length <= ndn::MAX_NDN_PACKET_SIZE);
   std::copy (data, data + length, m_pipe);
 
   // Schedule delayed transmission
@@ -52,7 +59,7 @@ Link::PostTransmit (const std::string& nodeId, std::size_t dataLen,
                 << ", LossRate = " << it->second->GetLossRate () << std::endl;
       if (!it->second->DropPacket ())
         {
-          m_nodeTable[it->first]->HandleLinkMessage (m_id, m_pipe, dataLen);
+          m_nodeTable[it->first]->HandleLinkMessage (m_pipe, dataLen);
         }
     }
 
@@ -70,8 +77,9 @@ Link::PrintLinkMatrix ()
       std::map<std::string, boost::shared_ptr<LinkAttribute> >::iterator inner;
       for (inner = neighbors.begin (); inner != neighbors.end (); inner++)
         {
-          std::cout << "[Link::PrintLinkMatrix] from " << outer->first << " to " << inner->first
-                    << ", LossRate = " << inner->second->GetLossRate () << std::endl;
+          std::cout << "[Link::PrintLinkMatrix] (" << m_id << ") from " << outer->first
+                    << " to " << inner->first << ", LossRate = "
+                    << inner->second->GetLossRate () << std::endl;
         }
     }
 }

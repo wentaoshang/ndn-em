@@ -85,18 +85,22 @@ Emulator::ReadLinkConfig (const char* path)
         link = it->second;
 
       // For now, only support packet loss rate
-      boost::shared_ptr<LinkAttribute> attr = boost::make_shared<LinkAttribute> (boost::lexical_cast<double> (param));
+      boost::shared_ptr<LinkAttribute> attr =
+        boost::make_shared<LinkAttribute> (boost::lexical_cast<double> (param));
 
       //TODO: sanitation check
 
-      // Add nodes & connections to link
-      link->AddNode (from, m_nodeTable[from]);
-      link->AddNode (to, m_nodeTable[to]);
+      // Add connection to link
       link->AddConnection (from, to, attr);
 
-      // Add links to nodes
-      m_nodeTable[from]->AddLink (linkId, link);
-      m_nodeTable[to]->AddLink (linkId, link);
+      // Add link to nodes and nodes to link
+      // Check for duplication
+      boost::shared_ptr<LinkFace> face;
+      if (m_nodeTable[from]->AddLink (link, face))
+        link->AddNode (face);      
+
+      if (m_nodeTable[to]->AddLink (link, face))
+        link->AddNode (face);
     }
 
   std::map<std::string, boost::shared_ptr<Link> >::iterator it0;
