@@ -16,7 +16,7 @@ namespace emulator {
  * Provide a common base class for NDN packet wrappers
  */
 class Packet {
-public:
+protected:
   Packet (const ndn::Block& wire)
     : m_wire (wire)
   {
@@ -27,6 +27,7 @@ public:
   {
   }
 
+public:
   const ndn::Block&
   GetBlock () const
   {
