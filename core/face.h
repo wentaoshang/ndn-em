@@ -15,7 +15,7 @@
 namespace emulator {
 
 class Face : boost::noncopyable {
-public:
+protected:
   Face (const int faceId, const std::string& nodeId, boost::asio::io_service& ioService,
         const boost::function<void (const int, const ndn::Block&)>& nodeMessageCallback)
     : m_id (faceId)
@@ -31,6 +31,7 @@ public:
     std::cout << "[Face::~Face] (" << m_nodeId << ":" << m_id << ")" << std::endl;
   }
 
+public:
   int
   GetId () const
   {
