@@ -180,8 +180,8 @@ LinkFace::PostTx (int NB, int BE, const boost::system::error_code& error)
                   << ") channel clear after " << NB << " backoffs. Start tx" << std::endl;
         m_state = TX;
 
-        // Send the message to the link
-        m_link->Transmit (m_nodeId, m_pendingTx);
+        // Send the message to the link asynchronously
+        m_ioService.post (boost::bind (&Link::Transmit, m_link, m_nodeId, m_pendingTx));
 
         // Set timer to clear TX state later
         std::size_t pkt_len = m_pendingTx->GetLength ();
