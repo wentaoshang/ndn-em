@@ -78,7 +78,7 @@ Emulator::ReadLinkConfig (const char* path)
       std::map<std::string, boost::shared_ptr<Link> >::iterator it = m_linkTable.find (linkId);
       if (it == m_linkTable.end ())
         {
-          link = boost::make_shared<Link> (linkId, boost::ref (m_ioService));
+          link = boost::make_shared<Link> (linkId);
           m_linkTable[linkId] = link;
         }
       else

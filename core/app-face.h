@@ -19,7 +19,7 @@ public:
   AppFace (const int faceId, const std::string& nodeId, boost::asio::io_service& ioService,
            const boost::function<void (const int, const ndn::Block&)>& nodeMessageCallback,
            const boost::function<void (const int)>& closeFaceCallback)
-    : Face (faceId, nodeId, nodeMessageCallback)
+    : Face (faceId, nodeId, ioService, nodeMessageCallback)
     , m_closeFaceCallback (closeFaceCallback)
     , m_socket (ioService)
     , m_inputBufferSize (0)

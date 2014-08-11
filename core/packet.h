@@ -27,6 +27,18 @@ public:
   {
   }
 
+  const ndn::Block&
+  GetBlock () const
+  {
+    return m_wire;
+  }
+
+  uint32_t
+  GetType () const
+  {
+    return m_wire.type ();
+  }
+
   const uint8_t*
   GetBytes () const
   {

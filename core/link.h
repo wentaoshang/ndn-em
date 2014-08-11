@@ -23,11 +23,8 @@ class LinkFace;
 
 class Link : boost::noncopyable {
 public:
-  Link (const std::string& id, boost::asio::io_service& ioService)
+  Link (const std::string& id)
     : m_id (id)
-    , m_busy (false)
-    , m_txRate (250.0) // 250 kbit/s
-    , m_delayTimer (ioService)
   {
   }
 
@@ -35,12 +32,6 @@ public:
   GetId ()
   {
     return m_id;
-  }
-
-  bool
-  IsBusy ()
-  {
-    return m_busy;
   }
 
   void
@@ -54,22 +45,15 @@ public:
   }
 
   void
-  Transmit (const std::string&, const uint8_t*, std::size_t);
+  Transmit (const std::string&, const boost::shared_ptr<Packet>&);
 
   void
   PrintLinkMatrix ();
 
-private:
-  void
-  PostTransmit (const std::string&, std::size_t, const boost::system::error_code&);
+  static const double TX_RATE; // in kbit/s
 
 private:
   const std::string m_id; // link id
-  uint8_t m_pipe[LINK_MTU]; // link pipe
-  bool m_busy;
-  double m_txRate; // in kbit/s
-  //TODO: use multiple timers for different nodes and emulate per-node delay
-  boost::asio::deadline_timer m_delayTimer;
   std::map<std::string, boost::shared_ptr<LinkFace> > m_nodeTable; // nodes on the link
   std::map<std::string, std::map<std::string, boost::shared_ptr<LinkAttribute> > > m_linkMatrix;
 };

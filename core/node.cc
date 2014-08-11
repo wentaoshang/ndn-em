@@ -87,9 +87,9 @@ Node::AddLink (boost::shared_ptr<Link>& link, boost::shared_ptr<LinkFace>& out)
 
   int faceId = m_faceCounter++;
   boost::shared_ptr<LinkFace> face =
-    boost::make_shared<LinkFace> (faceId, m_id,
+    boost::make_shared<LinkFace> (faceId, m_id, boost::ref (m_ioService),
                                   boost::bind (&Node::HandleFaceMessage, this, _1, _2),
-                                  link, boost::ref (m_ioService));
+                                  link);
 
   // Add link face to face table
   m_faceTable[faceId] = face;

@@ -5,6 +5,8 @@
 
 namespace emulator {
 
+const double Link::TX_RATE = 250.0;  // 250 kbit/s
+
 void
 Link::AddNode (boost::shared_ptr<LinkFace>& node)
 {
@@ -13,58 +15,20 @@ Link::AddNode (boost::shared_ptr<LinkFace>& node)
 }
 
 void
-Link::Transmit (const std::string& nodeId, const uint8_t* data, std::size_t length)
+Link::Transmit (const std::string& nodeId, const boost::shared_ptr<Packet>& pkt)
 {
-  // Check for collision
-  if (m_busy)
-    {
-      std::cout << "[Link::Transmit] node " << nodeId << " tries to transmit while link "
-                << m_id << " is busy" << std::endl;
-      m_delayTimer.cancel ();
-      return;
-    }
-
-  m_busy = true;
-
-  // Make a copy of the data into a local "pipe" buffer
-  assert (length <= ndn::MAX_NDN_PACKET_SIZE);
-  std::copy (data, data + length, m_pipe);
-
-  // Schedule delayed transmission
-  //TODO: implement per-node delay based on tx rate
-  long delay = static_cast<long> ((static_cast<double> (length) * 8.0 * 1000.0 / (m_txRate * 1024.0)));
-  m_delayTimer.expires_from_now (boost::posix_time::milliseconds (delay));
-  m_delayTimer.async_wait
-    (boost::bind (&Link::PostTransmit, this, boost::cref (nodeId), length, _1));
-}
-
-void
-Link::PostTransmit (const std::string& nodeId, std::size_t dataLen,
-                    const boost::system::error_code& error)
-{
-  if (error)
-    {
-      std::cerr << "[Link::PostTransmit] (" << m_id << ") error = "
-                << error.message () << std::endl;
-      m_busy = false;
-      return;
-    }
-
   // Transmit to other nodes on the link according to link attribute matrix
   std::map<std::string, boost::shared_ptr<LinkAttribute> >& neighbors = m_linkMatrix[nodeId];
   std::map<std::string, boost::shared_ptr<LinkAttribute> >::iterator it;
   for (it = neighbors.begin (); it != neighbors.end (); it++)
     {
-      std::cout << "[Link::PostTransmit] (" << m_id << ") " << nodeId << " -> " << it->first
+      std::cout << "[Link::Transmit] (" << m_id << ") " << nodeId << " -> " << it->first
                 << ", LossRate = " << it->second->GetLossRate () << std::endl;
       if (!it->second->DropPacket ())
         {
-          m_nodeTable[it->first]->HandleLinkMessage (m_pipe, dataLen);
+          m_nodeTable[it->first]->HandleLinkMessage (pkt);
         }
     }
-
-  // Clear channel
-  m_busy = false;
 }
 
 void

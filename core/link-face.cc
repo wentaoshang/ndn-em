@@ -12,17 +12,17 @@ const int LinkFace::MAX_BE = 5;
 const int LinkFace::MAX_CSMA_BACKOFFS = 4;
 
 LinkFace::LinkFace (const int faceId, const std::string& nodeId,
+                    boost::asio::io_service& ioService,
                     const boost::function<void (const int, const ndn::Block&)>&
                     nodeMessageCallback,
-                    boost::shared_ptr<Link> link,
-                    boost::asio::io_service& ioService)
-  : Face (faceId, nodeId, nodeMessageCallback)
-  , m_linkId (link->GetId ())
+                    boost::shared_ptr<Link> link)
+  : Face (faceId, nodeId, ioService, nodeMessageCallback)
   , m_link (link)
-  , m_ioService (ioService)
+  , m_delayTimer (ioService)
+  , m_state (IDLE) // PhyState.IDLE
 {
   std::cout << "[LinkFace::LinkFace] (" << m_nodeId
-            << ":" << m_id << ") on link " << m_linkId << std::endl;
+            << ":" << m_id << ") on link " << m_link->GetId () << std::endl;
 }
 
 
@@ -33,27 +33,87 @@ LinkFace::GetLinkId () const
 }
 
 void
-LinkFace::HandleLinkMessage (const uint8_t* data, std::size_t length)
+LinkFace::StartRx (const boost::shared_ptr<Packet>& pkt)
 {
-  // Try to parse message data
-  bool isOk = true;
-  ndn::Block element;
-  isOk = ndn::Block::fromBuffer (data, length, element);
-  if (!isOk)
+  std::cout << "[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
+            << ") prior state = " << PhyStateToString (m_state) << std::endl;
+  switch (m_state)
     {
-      throw std::runtime_error ("Incomplete packet in buffer");
-    }
+    case IDLE:
+      {
+        m_state = RX;
+        m_pendingRx = pkt;
+        std::size_t pkt_len = pkt->GetLength ();
+        long delay = static_cast<long>
+          ((static_cast<double> (pkt_len) * 8.0 * 1000.0 / (Link::TX_RATE * 1024.0)));
+        m_delayTimer.expires_from_now (boost::posix_time::milliseconds (delay));
+        m_delayTimer.async_wait
+          (boost::bind (&LinkFace::PostRx, this, _1));
+      }
+      break;
 
-  // Execute the message callback asynchronously
-  m_ioService.post (boost::bind (m_nodeMessageCallback, m_id, element));
+    case RX:
+      std::cout << "[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
+                << ") called while in RX" << std::endl;
+      m_state = RX_COLLIDE;
+      break;
+
+    case TX:
+      std::cout << "[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
+                << ") called while in TX" << std::endl;
+      break;
+
+    default:
+      throw std::runtime_error ("[LinkFace::StartRX] illegal state: "
+                                + PhyStateToString (m_state));
+      break;
+    }
+  std::cout << "[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
+            << ") after state = " << PhyStateToString (m_state) << std::endl;
 }
 
 void
-LinkFace::Send (const boost::shared_ptr<Packet>& pkt)
+LinkFace::PostRx (const boost::system::error_code& error)
 {
-  const uint8_t* data = pkt->GetBytes ();
-  std::size_t length = pkt->GetLength ();
-  m_link->Transmit (m_nodeId, data, length);
+  if (error)
+    {
+      std::cerr << "[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
+                << ") error = " << error.message () << std::endl;
+      m_state = FAILURE;
+      return;
+    }
+
+  std::cout << "[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
+            << ") prior state = " << PhyStateToString (m_state) << std::endl;
+  switch (m_state)
+    {
+    case RX:
+      {
+        const ndn::Block& wire = m_pendingRx->GetBlock ();
+        // Post the message asynchronously
+        m_ioService.post (boost::bind (m_nodeMessageCallback, m_id, wire));
+      }
+      break;
+    case RX_COLLIDE:
+      std::cout << "[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
+                << ") RX failed due to packet collision" << std::endl;
+      break;
+    default:
+      throw std::runtime_error ("[LinkFace::PostRx] illegal state: "
+                                + PhyStateToString (m_state));
+      break;
+    }
+
+  // Clear PHY state
+  m_state = IDLE;
+  std::cout << "[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
+            << ") after state = " << PhyStateToString (m_state) << std::endl;
+}
+
+void
+LinkFace::StartTx (const boost::shared_ptr<Packet>& pkt)
+{
+  m_link->Transmit (m_nodeId, pkt);
 }
 
 } // namespace emulator

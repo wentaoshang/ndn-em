@@ -3,6 +3,7 @@
 #ifndef __FACE_H__
 #define __FACE_H__
 
+#include <boost/asio.hpp>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/utility.hpp>
@@ -15,10 +16,11 @@ namespace emulator {
 
 class Face : boost::noncopyable {
 public:
-  Face (const int faceId, const std::string& nodeId,
+  Face (const int faceId, const std::string& nodeId, boost::asio::io_service& ioService,
         const boost::function<void (const int, const ndn::Block&)>& nodeMessageCallback)
     : m_id (faceId)
     , m_nodeId (nodeId)
+    , m_ioService (ioService)
     , m_nodeMessageCallback (nodeMessageCallback)
   {
   }
@@ -47,6 +49,7 @@ public:
 protected:
   const int m_id;  // face id
   const std::string& m_nodeId;  // node id
+  boost::asio::io_service& m_ioService;
   const boost::function<void (const int, const ndn::Block&)> m_nodeMessageCallback;
 };
 
