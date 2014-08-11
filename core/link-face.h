@@ -5,6 +5,8 @@
 
 #include <boost/asio.hpp>
 #include <boost/function.hpp>
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
 
 #include "face.h"
 
@@ -44,6 +46,8 @@ public:
 
   enum PhyState {
     IDLE = 0,
+    CCA,
+    CCA_BAD,
     TX,
     RX,
     RX_COLLIDE,
@@ -58,6 +62,10 @@ public:
       {
       case IDLE:
         return "IDLE";
+      case CCA:
+        return "CCA";
+      case CCA_BAD:
+        return "CCA_BAD";
       case TX:
         return "TX";
       case RX:
@@ -84,13 +92,30 @@ private:
   StartTx (const boost::shared_ptr<Packet>&);
 
   void
-  PostTx (const boost::system::error_code&);
+  PostTx (int, int, const boost::system::error_code&);
+
+  void
+  ResetCCA (const boost::system::error_code& error)
+  {
+    if (!error)
+      {
+        if (m_state != CCA_BAD)
+          throw std::runtime_error ("[LinkFace::ResetCCA] illegal state: " + PhyStateToString (m_state));
+
+        m_state = CCA;
+      }
+  }
 
 private:
   boost::shared_ptr<Link> m_link;
-  boost::asio::deadline_timer m_delayTimer;
+  boost::asio::deadline_timer m_rxTimer;  // emulating transmission delay
+  boost::asio::deadline_timer m_ccaTimer;
+  boost::asio::deadline_timer m_csmaTimer; // implementing CSMA algorithm
   PhyState m_state;
+  //TODO: implement sending and receiving queue
   boost::shared_ptr<Packet> m_pendingRx;
+  boost::shared_ptr<Packet> m_pendingTx;
+  boost::random::mt19937 m_engine;
 };
 
 } // namespace emulator
