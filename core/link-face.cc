@@ -170,8 +170,6 @@ LinkFace::PostTx (int NB, int BE, const boost::system::error_code& error)
   std::cout << "[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
             << ") prior state = " << PhyStateToString (m_state) << std::endl;
 
-  m_ccaTimer.cancel ();
-
   switch (m_state)
     {
     case CCA:

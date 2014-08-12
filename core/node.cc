@@ -171,7 +171,7 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
     {
       std::set<int> outList;
       m_fib.LookUp (i->getName (), outList);
-      outList.erase (faceId);  // Do not forward back to incoming face (???)
+      //outList.erase (faceId);  // Do not forward back to incoming face (???)
 
       if (outList.empty ())
         {
