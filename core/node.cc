@@ -102,6 +102,23 @@ Node::AddLink (const boost::shared_ptr<Link>& link, boost::shared_ptr<LinkFace>&
   return true;
 }
 
+void
+Node::AddRoute (const std::string& prefix, const std::string& linkId)
+{
+  std::map<std::string, int>::iterator it = m_linkTable.find (linkId);
+  if (it != m_linkTable.end ())
+    {
+      int faceId = it->second;
+      ndn::Name p (prefix);
+      m_fib.AddRoute (p, faceId);
+    }
+  else
+    {
+      std::cerr << "[Node::AddRoute] (" << m_id << ") link id " << linkId
+                << " doesn't exist in local link table" << std::endl;
+    }
+}
+
 /**
  * Handle message received from local face
  */
@@ -154,22 +171,25 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
     {
       std::set<int> outList;
       m_fib.LookUp (i->getName (), outList);
+      outList.erase (faceId);  // Do not forward back to incoming face (???)
+
       if (outList.empty ())
         {
-          //std::cerr << "[Node::HandleInterest] (" << m_id << ":" << faceId
-          //          << ") no route to name " << i->getName () << std::endl;
+          std::cerr << "[Node::HandleInterest] (" << m_id << ":" << faceId
+                    << ") no route to name " << i->getName () << std::endl;
 
-          // If there is no route for the interest, broadcast to all faces
-          // except the one where the interest comes from
-          boost::shared_ptr<Packet> pkt (boost::make_shared<InterestPacket> (i));
-          std::map<int, boost::shared_ptr<Face> >::iterator it;
-          for (it = m_faceTable.begin (); it != m_faceTable.end (); it++)
-            {
-              if (it->first != faceId)
-                {
-                  it->second->Send (pkt);
-                }
-            }
+//           // If there is no route for the interest, broadcast to all faces
+//           // except the one where the interest comes from
+//           boost::shared_ptr<Packet> pkt (boost::make_shared<InterestPacket> (i));
+//           std::map<int, boost::shared_ptr<Face> >::iterator it;
+//           for (it = m_faceTable.begin (); it != m_faceTable.end (); it++)
+//             {
+//               if (it->first != faceId)
+//                 {
+//                   it->second->Send (pkt);
+//                 }
+//             }
+
           return;
         }
 
@@ -232,7 +252,7 @@ Node::PrintInfo ()
       std::cout << "    faceId: " << it->second << ", linkId:" << it->first << std::endl; 
     }
   std::cout << "  FIB:" << std::endl;
-  //TODO: print FIB
+  m_fib.Print ("    ");
 }
 
 } // namespace emulator

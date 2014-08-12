@@ -4,7 +4,6 @@
 #include <fstream>
 #include <sstream>
 #include <exception>
-#include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/assert.hpp>
@@ -69,9 +68,18 @@ Emulator::ReadNetworkConfig (const char* path)
                                           + " for node " + nodeId);
             }
 
-          BOOST_FOREACH (ptree::value_type& v, node.get_child ("Routes"))
+          // Static routes are optional
+          boost::optional<ptree&> routes = node.get_child ("Routes");
+          if (routes)
             {
-              BOOST_ASSERT (v.first == "Route");
+              BOOST_FOREACH (ptree::value_type& v, *routes)
+                {
+                  BOOST_ASSERT (v.first == "Route");
+                  ptree& rt = v.second;
+                  const std::string prefix = rt.get<std::string> ("Prefix");
+                  const std::string outFace = rt.get<std::string> ("OutFace");
+                  pnode->AddRoute (prefix, outFace);
+                }
             }
 
           m_nodeTable[nodeId] = pnode;
@@ -132,9 +140,7 @@ Emulator::PrintLinks ()
   std::map<std::string, boost::shared_ptr<Link> >::iterator it;
   for (it = m_linkTable.begin (); it != m_linkTable.end (); it++)
     {
-      std::cout << "Link id: " << it->first << std::endl;
-      std::cout << "  LinkMatrix: " << std::endl;
-      it->second->PrintLinkMatrix ("    ");
+      it->second->PrintInfo ();
     }
 }
 

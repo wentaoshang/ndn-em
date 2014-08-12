@@ -20,6 +20,11 @@ public:
   void
   AddRoute (const ndn::Name& prefix, const int faceId)
   {
+    // Research question: Currently we use broadcast when sending packet on
+    // the local link. If we want to use L2 unicast, we need to include L2
+    // addresses in the L3 routing table. Is that necessary for sensor networks,
+    // given that the wireless channel is already broadcast in nature?
+
     m_fib[prefix].insert (faceId);
 
     //TODO: inherit from parent prefixes
@@ -44,35 +49,10 @@ public:
   }
 
   void
-  LookUp (const ndn::Name& name, std::set<int>& out)
-  {
-    // If we use longest prefix match, we need to inherit
-    // outgoing faces from parent prefixes. Or we don't
-    // inherit but use "match-all" semantics. This allows
-    // simpler "add/delete route" operations but will
-    // make lookup operation very slow. Therefore we
-    // should use "LPM with inheritance" semantics for
-    // faster lookup speed.
+  LookUp (const ndn::Name&, std::set<int>&);
 
-    for (int i = name.size (); i >= 0; i--)
-      {
-        ndn::Name prefix = name.getPrefix (i);
-        fib_type::iterator it = m_fib.find (prefix);
-        if (it != m_fib.end ())
-          {
-            // Found match, stop now and copy all faces to "out"
-            std::set<int>& faces = it->second;
-            std::cout << "[Fib::LookUp] " << name << " ->";
-            std::set<int>::iterator fit;
-            for (fit = faces.begin (); fit != faces.end (); fit++)
-              {
-                std::cout << " " << *fit;
-              }
-            std::cout << std::endl;
-            out.insert (faces.begin (), faces.end ());
-          }
-      }
-  }
+  void
+  Print (const std::string& = "");
 
 private:
   //TODO: support cost for each route

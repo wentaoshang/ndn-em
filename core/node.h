@@ -55,6 +55,9 @@ public:
   AddLink (const boost::shared_ptr<Link>&, boost::shared_ptr<LinkFace>&);
 
   void
+  AddRoute (const std::string&, const std::string&);
+
+  void
   Start ();
 
   void
