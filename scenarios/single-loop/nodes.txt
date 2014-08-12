@@ -1,4 +1,0 @@
-; NodeID UnixPath AppName
-n0 /tmp/node0 aaa
-n1 /tmp/node1 aaa
-n2 /tmp/node2 aaa
