@@ -10,6 +10,7 @@
 
 #include <ndn-cxx/encoding/block.hpp>
 
+#include "logging.h"
 #include "packet.h"
 
 namespace emulator {
@@ -23,12 +24,13 @@ protected:
     , m_ioService (ioService)
     , m_nodeMessageCallback (nodeMessageCallback)
   {
+    NDNEM_LOG_TRACE ("[Face::Face] (" << m_nodeId << ":" << m_id << ")");
   }
 
   virtual
   ~Face ()
   {
-    std::cout << "[Face::~Face] (" << m_nodeId << ":" << m_id << ")" << std::endl;
+    NDNEM_LOG_TRACE ("[Face::~Face] (" << m_nodeId << ":" << m_id << ")");
   }
 
 public:

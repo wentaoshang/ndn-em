@@ -21,7 +21,7 @@ FibManager::ProcessCommand (const int faceId, const boost::shared_ptr<ndn::Inter
       ControlParameters parameters;
       if (!extractParameters (parameterComponent, parameters))
 	{
-	  std::cerr << "[FibManager::ProcessCommand] ignore invalid command" << std::endl;
+	  NDNEM_LOG_ERROR ("[FibManager::ProcessCommand] ignore invalid command");
 	  //TODO: send back error response
 	  return;
 	}
@@ -53,9 +53,9 @@ FibManager::AddNextHop(ControlParameters& parameters,
   uint64_t faceId = parameters.getFaceId ();
   uint64_t cost = parameters.getCost(); // ignore cost for now
 
-  std::cout << "[FibManager::AddNextHop] prefix = " << prefix
-	    << ", faceid = " << faceId
-	    << ", cost = " << cost << std::endl;
+  NDNEM_LOG_DEBUG ("[FibManager::AddNextHop] prefix = " << prefix
+                   << ", faceid = " << faceId
+                   << ", cost = " << cost);
 
   //TODO: validate face id
 

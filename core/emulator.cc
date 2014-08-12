@@ -16,7 +16,7 @@ namespace emulator {
 void
 Emulator::ReadNetworkConfig (const char* path)
 {
-  std::cout << "[Emulator::ReadNetworkConfig] from file: " << path << std::endl;
+  NDNEM_LOG_INFO ("[Emulator::ReadNetworkConfig] from file: " << path);
 
   using boost::property_tree::ptree;
   ptree config;
@@ -60,8 +60,8 @@ Emulator::ReadNetworkConfig (const char* path)
                   if (pnode->AddLink (link, face))
                     link->AddNode (face);
                   else
-                    std::cerr << "[Emulator::ReadNetworkConfig] duplicate link id "
-                              << linkId << " for node " << nodeId << std::endl;
+                    NDNEM_LOG_ERROR ("[Emulator::ReadNetworkConfig] duplicate link id "
+                                     << linkId << " for node " << nodeId);
                 }
               else
                 throw std::runtime_error ("[Emulator::ReadNetworkConfig] unkown link id " + linkId

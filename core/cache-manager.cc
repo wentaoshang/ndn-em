@@ -39,8 +39,8 @@ CacheManager::Insert (const boost::shared_ptr<ndn::Data>& d)
   size_t sz = d->wireEncode ().size ();
   if (sz > m_limit)
     {
-      std::cerr << "[CacheManager::Insert] (" << m_nodeId << ") data packet too big: "
-                << d->getName () << std::endl;
+      NDNEM_LOG_ERROR ("[CacheManager::Insert] (" << m_nodeId
+                       << ") data packet too big: " << d->getName ());
       return;
     }
 
@@ -62,7 +62,7 @@ CacheManager::CleanUp (const boost::system::error_code& error)
 {
   if (error)
     {
-      std::cerr << "[CacheManager::CleanUp] error = " << error.message () << std::endl;
+      NDNEM_LOG_ERROR ("[CacheManager::CleanUp] error = " << error.message ());
       return;
     }
 
@@ -74,8 +74,8 @@ CacheManager::CleanUp (const boost::system::error_code& error)
     {
       if (it->expire < now)
         {
-          std::cout << "[CacheManager::CleanUp] (" << m_nodeId << ") remove data: "
-                    << it->data->getName () << std::endl;
+          NDNEM_LOG_TRACE ("[CacheManager::CleanUp] (" << m_nodeId
+                           << ") remove data: " << it->data->getName ());
           size_t sz = it->size;
           it = m_queue.erase (it);
           m_count -= sz;

@@ -1,5 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
 
+#include "logging.h"
 #include "pit.h"
 
 namespace emulator {
@@ -104,7 +105,7 @@ Pit::CleanUp (const boost::system::error_code& error)
 {
   if (error)
     {
-      std::cerr << "[Pit::CleanUp] error = " << error.message () << std::endl;
+      NDNEM_LOG_ERROR ("[Pit::CleanUp] error = " << error.message ());
       return;
     }
 

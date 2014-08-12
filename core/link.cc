@@ -22,8 +22,8 @@ Link::Transmit (const std::string& nodeId, const boost::shared_ptr<Packet>& pkt)
   std::map<std::string, boost::shared_ptr<LinkAttribute> >::iterator it;
   for (it = neighbors.begin (); it != neighbors.end (); it++)
     {
-      std::cout << "[Link::Transmit] (" << m_id << ") " << nodeId << " -> " << it->first
-                << ", LossRate = " << it->second->GetLossRate () << std::endl;
+      NDNEM_LOG_DEBUG ("[Link::Transmit] (" << m_id << ") " << nodeId << " -> " << it->first
+                       << ", LossRate = " << it->second->GetLossRate ());
       if (!it->second->DropPacket ())
         {
           m_nodeTable[it->first]->HandleLinkMessage (pkt);

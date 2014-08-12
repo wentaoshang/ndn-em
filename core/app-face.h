@@ -62,8 +62,8 @@ private:
   {
     if (error)
       {
-        std::cerr << "[AppFace::HandleSend] (" << m_nodeId
-                  << ":" << m_id << ") error = " << error.message () << std::endl;
+        NDNEM_LOG_ERROR ("[AppFace::HandleSend] (" << m_nodeId
+                         << ":" << m_id << ") error = " << error.message ());
         //TODO: close face
       }
   }

@@ -114,8 +114,8 @@ Node::AddRoute (const std::string& prefix, const std::string& linkId)
     }
   else
     {
-      std::cerr << "[Node::AddRoute] (" << m_id << ") link id " << linkId
-                << " doesn't exist in local link table" << std::endl;
+      NDNEM_LOG_ERROR ("[Node::AddRoute] (" << m_id << ") link id " << linkId
+                       << " doesn't exist in local link table");
     }
 }
 
@@ -125,8 +125,8 @@ Node::AddRoute (const std::string& prefix, const std::string& linkId)
 void
 Node::HandleFaceMessage (const int faceId, const ndn::Block& element)
 {
-  //std::cout << "[Node::HandleFaceMessage] (" << m_id << ":" << faceId
-  //          << ") element type = " << element.type () << std::endl;
+  NDNEM_LOG_TRACE ("[Node::HandleFaceMessage] (" << m_id << ":" << faceId
+                   << ") element type = " << element.type ());
   try
     {
       if (element.type () == ndn::Tlv::Interest)
@@ -153,14 +153,14 @@ Node::HandleFaceMessage (const int faceId, const ndn::Block& element)
 void
 Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& i)
 {
-  std::cout << "[Node::HandleInterest] (" << m_id << ":" << faceId << ") " << (*i) << std::endl;
+  NDNEM_LOG_DEBUG ("[Node::HandleInterest] (" << m_id << ":" << faceId << ") " << (*i));
 
   // Check cache
   boost::shared_ptr<ndn::Data> d;
   if (m_cacheManager->FindMatchingData (i, d))
     {
-      std::cout << "[Node::HandleInterest] (" << m_id << ":" << faceId
-                << ") Match found in cache" << std::endl;
+      NDNEM_LOG_TRACE ("[Node::HandleInterest] (" << m_id << ":" << faceId
+                       << ") Match found in cache");
       const boost::shared_ptr<Packet> pkt (boost::make_shared<DataPacket> (d));
       this->ForwardToFace (pkt, faceId);
       return;
@@ -175,21 +175,8 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
 
       if (outList.empty ())
         {
-          std::cerr << "[Node::HandleInterest] (" << m_id << ":" << faceId
-                    << ") no route to name " << i->getName () << std::endl;
-
-//           // If there is no route for the interest, broadcast to all faces
-//           // except the one where the interest comes from
-//           boost::shared_ptr<Packet> pkt (boost::make_shared<InterestPacket> (i));
-//           std::map<int, boost::shared_ptr<Face> >::iterator it;
-//           for (it = m_faceTable.begin (); it != m_faceTable.end (); it++)
-//             {
-//               if (it->first != faceId)
-//                 {
-//                   it->second->Send (pkt);
-//                 }
-//             }
-
+          NDNEM_LOG_TRACE ("[Node::HandleInterest] (" << m_id << ":" << faceId
+                           << ") no route to name " << i->getName ());
           return;
         }
 
@@ -208,8 +195,8 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
     }
   else
     {
-      std::cout << "[Node::HandleInterest] (" << m_id << ":" << faceId
-                << ") Looping Interest with nonce " << i->getNonce () << " detected." << std::endl;
+      NDNEM_LOG_DEBUG ("[Node::HandleInterest] (" << m_id << ":" << faceId
+                      << ") Looping Interest with nonce " << i->getNonce () << " detected.");
     }
 
   //m_pit.Print ();
@@ -218,7 +205,7 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
 void
 Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d)
 {
-  std::cout << "[Node::HandleData] (" << m_id << ":" << faceId << ") " << (*d);
+  NDNEM_LOG_DEBUG ("[Node::HandleData] (" << m_id << ":" << faceId << ") " << d->getName ());
   std::set<int> outList;
   m_pit.ConsumeInterestWithDataName (d->getName (), outList);
 
@@ -235,7 +222,7 @@ Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d)
 void
 Node::RemoveFace (const int faceId)
 {
-  std::cout << "[Node::RemoveFace] id = " << m_id << ": remove face " << faceId << std::endl;
+  NDNEM_LOG_DEBUG ("[Node::RemoveFace] id = " << m_id << ": remove face " << faceId);
   m_faceTable.erase (faceId);
   m_fibManager->CleanUpFib (faceId);
 }

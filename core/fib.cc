@@ -1,5 +1,7 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
 
+#include <sstream>
+#include "logging.h"
 #include "fib.h"
 
 namespace emulator {
@@ -24,13 +26,14 @@ Fib::LookUp (const ndn::Name& name, std::set<int>& out)
 	{
 	  // Found match, stop now and copy all faces to "out"
 	  std::set<int>& faces = it->second;
-	  std::cout << "[Fib::LookUp] " << name << " ->";
+          std::stringstream ss;
+	  ss << "[Fib::LookUp] " << name << " ->";
 	  std::set<int>::iterator fit;
 	  for (fit = faces.begin (); fit != faces.end (); fit++)
 	    {
-	      std::cout << " " << *fit;
+	      ss << " " << *fit;
 	    }
-	  std::cout << std::endl;
+          NDNEM_LOG_DEBUG (ss.str ());
 	  out.insert (faces.begin (), faces.end ());
 	}
     }

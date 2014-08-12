@@ -55,8 +55,8 @@ AppFace::HandleReceive (const boost::system::error_code& error,
     }
   else
     {
-      //std::cout << "[AppFace::HandleReceive] (" << m_nodeId
-      //          << ":" << m_id << ") error = " << error.message () << std::endl;
+      NDNEM_LOG_TRACE ("[AppFace::HandleReceive] (" << m_nodeId
+                       << ":" << m_id << ") error = " << error.message ());
       m_closeFaceCallback (m_id);
     }
 }

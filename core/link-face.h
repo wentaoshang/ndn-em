@@ -102,8 +102,8 @@ private:
         if (m_state != CCA_BAD)
           throw std::runtime_error ("[LinkFace::ResetCCA] illegal state: " + PhyStateToString (m_state));
 
-        std::cout << "[LinkFace::ResetCCA] (" << m_nodeId << ":" << m_id
-                  << ") channel clear again" << std::endl;
+        NDNEM_LOG_TRACE ("[LinkFace::ResetCCA] (" << m_nodeId << ":" << m_id
+                         << ") channel clear again");
         m_state = CCA;
       }
   }

@@ -12,6 +12,8 @@
 #include <iostream>
 #include <deque>
 
+#include "logging.h"
+
 namespace emulator {
 namespace node {
 

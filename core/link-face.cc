@@ -23,8 +23,8 @@ LinkFace::LinkFace (const int faceId, const std::string& nodeId,
   , m_csmaTimer (ioService)
   , m_state (IDLE) // PhyState.IDLE
 {
-  std::cout << "[LinkFace::LinkFace] (" << m_nodeId
-            << ":" << m_id << ") on link " << m_link->GetId () << std::endl;
+  NDNEM_LOG_TRACE ("[LinkFace::LinkFace] (" << m_nodeId
+                   << ":" << m_id << ") on link " << m_link->GetId ());
 }
 
 
@@ -37,8 +37,8 @@ LinkFace::GetLinkId () const
 void
 LinkFace::StartRx (const boost::shared_ptr<Packet>& pkt)
 {
-  std::cout << "[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
-            << ") prior state = " << PhyStateToString (m_state) << std::endl;
+  NDNEM_LOG_TRACE ("[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
+                   << ") prior state = " << PhyStateToString (m_state));
   switch (m_state)
     {
     case IDLE:
@@ -57,8 +57,8 @@ LinkFace::StartRx (const boost::shared_ptr<Packet>& pkt)
     case CCA:
     case CCA_BAD:
       {
-        std::cout << "[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
-                  << ") called while in CCA" << std::endl;
+        NDNEM_LOG_TRACE ("[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
+                         << ") called while in CCA");
         m_state = CCA_BAD;
 
         // Clear channel if the colliding transmission finishes before CSMA backoff ends
@@ -74,14 +74,14 @@ LinkFace::StartRx (const boost::shared_ptr<Packet>& pkt)
 
     case RX:
     case RX_COLLIDE:
-      std::cout << "[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
-                << ") called while in RX" << std::endl;
+      NDNEM_LOG_TRACE ("[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
+                       << ") called while in RX");
       m_state = RX_COLLIDE;
       break;
 
     case TX:
-      std::cout << "[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
-                << ") called while in TX" << std::endl;
+      NDNEM_LOG_TRACE ("[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
+                       << ") called while in TX");
       break;
 
     default:
@@ -89,8 +89,8 @@ LinkFace::StartRx (const boost::shared_ptr<Packet>& pkt)
                                 + PhyStateToString (m_state));
       break;
     }
-  std::cout << "[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
-            << ") after state = " << PhyStateToString (m_state) << std::endl;
+  NDNEM_LOG_TRACE ("[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
+                   << ") after state = " << PhyStateToString (m_state));
 }
 
 void
@@ -98,14 +98,14 @@ LinkFace::PostRx (const boost::system::error_code& error)
 {
   if (error)
     {
-      std::cerr << "[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
-                << ") error = " << error.message () << std::endl;
+      NDNEM_LOG_ERROR ("[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
+                       << ") error = " << error.message ());
       m_state = FAILURE;
       return;
     }
 
-  std::cout << "[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
-            << ") prior state = " << PhyStateToString (m_state) << std::endl;
+  NDNEM_LOG_TRACE ("[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
+                   << ") prior state = " << PhyStateToString (m_state));
   switch (m_state)
     {
     case RX:
@@ -116,8 +116,8 @@ LinkFace::PostRx (const boost::system::error_code& error)
       }
       break;
     case RX_COLLIDE:
-      std::cout << "[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
-                << ") RX failed due to packet collision" << std::endl;
+      NDNEM_LOG_TRACE ("[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
+                       << ") RX failed due to packet collision");
       break;
     default:
       throw std::runtime_error ("[LinkFace::PostRx] illegal state: "
@@ -127,8 +127,8 @@ LinkFace::PostRx (const boost::system::error_code& error)
 
   // Clear PHY state
   m_state = IDLE;
-  std::cout << "[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
-            << ") after state = " << PhyStateToString (m_state) << std::endl;
+  NDNEM_LOG_TRACE ("[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
+                   << ") after state = " << PhyStateToString (m_state));
 }
 
 void
@@ -137,13 +137,13 @@ LinkFace::StartTx (const boost::shared_ptr<Packet>& pkt)
   if (m_state != IDLE)
     {
       //TODO: implement sending queue
-      std::cerr << "[LinkFace::StartTx] (" << m_nodeId << ":" << m_id
-                << ") device not idle. Drop packet." << std::endl;
+      NDNEM_LOG_ERROR ("[LinkFace::StartTx] (" << m_nodeId << ":" << m_id
+                       << ") device not idle. Drop packet.");
       return;
     }
 
-  std::cerr << "[LinkFace::StartTx] (" << m_nodeId << ":" << m_id
-            << ") start CCA" << std::endl;
+  NDNEM_LOG_TRACE ("[LinkFace::StartTx] (" << m_nodeId << ":" << m_id
+                   << ") start CCA");
 
   m_state = CCA;
   m_pendingTx = pkt;
@@ -161,21 +161,21 @@ LinkFace::PostTx (int NB, int BE, const boost::system::error_code& error)
 {
   if (error)
     {
-      std::cerr << "[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
-                << ") error = " << error.message () << std::endl;
+      NDNEM_LOG_ERROR ("[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
+                       << ") error = " << error.message ());
       m_state = FAILURE;
       return;
     }
 
-  std::cout << "[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
-            << ") prior state = " << PhyStateToString (m_state) << std::endl;
+  NDNEM_LOG_TRACE ("[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
+                   << ") prior state = " << PhyStateToString (m_state));
 
   switch (m_state)
     {
     case CCA:
       {
-        std::cout << "[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
-                  << ") channel clear after " << NB << " backoffs. Start tx" << std::endl;
+        NDNEM_LOG_TRACE ("[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
+                         << ") channel clear after " << NB << " backoffs. Start tx");
         m_state = TX;
 
         // Send the message to the link asynchronously
@@ -193,13 +193,13 @@ LinkFace::PostTx (int NB, int BE, const boost::system::error_code& error)
 
     case CCA_BAD:
       {
-        std::cout << "[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
-                  << ") channel busy after " << NB << " backoffs" << std::endl;
+        NDNEM_LOG_TRACE ("[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
+                         << ") channel busy after " << NB << " backoffs");
         NB = NB + 1;
         if (NB > LinkFace::MAX_CSMA_BACKOFFS)
           {
-            std::cout << "[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
-                      << ") reach max backoff. Give up Tx" << std::endl;
+            NDNEM_LOG_TRACE ("[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
+                             << ") reach max backoff. Give up Tx");
             return;
           }
         BE = BE + 1;
@@ -214,8 +214,8 @@ LinkFace::PostTx (int NB, int BE, const boost::system::error_code& error)
       break;
 
     case TX:
-      std::cout << "[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
-                << ") TX finish" << std::endl;
+      NDNEM_LOG_TRACE ("[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
+                       << ") TX finish");
       m_state = IDLE;
       break;
 
@@ -225,8 +225,8 @@ LinkFace::PostTx (int NB, int BE, const boost::system::error_code& error)
       break;
 
     }
-  std::cout << "[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
-            << ") after state = " << PhyStateToString (m_state) << std::endl;
+  NDNEM_LOG_TRACE ("[LinkFace::PostTx] (" << m_nodeId << ":" << m_id
+                   << ") after state = " << PhyStateToString (m_state));
 }
 
 } // namespace emulator

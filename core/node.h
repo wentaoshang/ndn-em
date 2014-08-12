@@ -13,6 +13,7 @@
 #include <map>
 #include <set>
 
+#include "logging.h"
 #include "app-face.h"
 #include "link-face.h"
 #include "pit.h"

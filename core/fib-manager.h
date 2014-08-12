@@ -12,6 +12,7 @@
 #include <iostream>
 #include <map>
 
+#include "logging.h"
 #include "face.h"
 #include "fib.h"
 
