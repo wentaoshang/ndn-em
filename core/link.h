@@ -41,6 +41,14 @@ public:
   AddConnection (const std::string& from, const std::string& to,
                  boost::shared_ptr<LinkAttribute>& attr)
   {
+    if (m_nodeTable.find (from) == m_nodeTable.end ())
+      throw std::runtime_error ("[Link::AddConnection] unknown node id "
+                                + from + " on link " + m_id);
+
+    if (m_nodeTable.find (to) == m_nodeTable.end ())
+      throw std::runtime_error ("[LinkAddConnection] unknown node id "
+                                + to + " on link " + m_id);
+
     m_linkMatrix[from][to] = attr;
   }
 
@@ -48,7 +56,7 @@ public:
   Transmit (const std::string&, const boost::shared_ptr<Packet>&);
 
   void
-  PrintLinkMatrix ();
+  PrintLinkMatrix (const std::string& = "");
 
   static const double TX_RATE; // in kbit/s
 

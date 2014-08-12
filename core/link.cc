@@ -32,7 +32,7 @@ Link::Transmit (const std::string& nodeId, const boost::shared_ptr<Packet>& pkt)
 }
 
 void
-Link::PrintLinkMatrix ()
+Link::PrintLinkMatrix (const std::string& pad)
 {
   std::map<std::string, std::map<std::string, boost::shared_ptr<LinkAttribute> > >::iterator outer;
   for (outer = m_linkMatrix.begin (); outer != m_linkMatrix.end (); outer++)
@@ -41,7 +41,7 @@ Link::PrintLinkMatrix ()
       std::map<std::string, boost::shared_ptr<LinkAttribute> >::iterator inner;
       for (inner = neighbors.begin (); inner != neighbors.end (); inner++)
         {
-          std::cout << "[Link::PrintLinkMatrix] (" << m_id << ") from " << outer->first
+          std::cout << pad << "from " << outer->first
                     << " to " << inner->first << ", LossRate = "
                     << inner->second->GetLossRate () << std::endl;
         }

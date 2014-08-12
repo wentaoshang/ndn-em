@@ -6,11 +6,10 @@
 namespace emulator {
 
 int
-main (int argc, char* argv[])
+run (int argc, char* argv[])
 {
   Emulator em;
-  em.ReadNodeConfig (argv[1]);
-  em.ReadLinkConfig (argv[2]);
+  em.ReadNetworkConfig (argv[1]);
 
   em.Start ();
 
@@ -24,7 +23,7 @@ main (int argc, char* argv[])
 {
   try
     {
-      emulator::main (argc, argv);
+      emulator::run (argc, argv);
     }
   catch (std::exception& e)
     {

@@ -14,10 +14,7 @@ namespace emulator {
 class Emulator {
 public:
   void
-  ReadNodeConfig (const char* path);
-
-  void
-  ReadLinkConfig (const char* path);
+  ReadNetworkConfig (const char* path);
 
   Node&
   GetNode (const std::string& nodeId)
@@ -29,6 +26,12 @@ public:
     else
       throw std::invalid_argument ("Node not found");
   }
+
+  void
+  PrintLinks ();
+
+  void
+  PrintNodes ();
 
   void
   Start ();

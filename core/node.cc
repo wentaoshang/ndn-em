@@ -78,7 +78,7 @@ Node::HandleAccept (const boost::shared_ptr<AppFace>& face,
 }
 
 bool
-Node::AddLink (boost::shared_ptr<Link>& link, boost::shared_ptr<LinkFace>& out)
+Node::AddLink (const boost::shared_ptr<Link>& link, boost::shared_ptr<LinkFace>& out)
 {
   const std::string& linkId = link->GetId ();
 
@@ -218,6 +218,21 @@ Node::RemoveFace (const int faceId)
   std::cout << "[Node::RemoveFace] id = " << m_id << ": remove face " << faceId << std::endl;
   m_faceTable.erase (faceId);
   m_fibManager->CleanUpFib (faceId);
+}
+
+void
+Node::PrintInfo ()
+{
+  std::cout << "Node id: " << m_id << std::endl;
+  std::cout << "  Unix socket path: " << m_socketPath << std::endl;
+  std::map<std::string, int>::iterator it;
+  std::cout << "  Link table:" << std::endl;
+  for (it = m_linkTable.begin (); it != m_linkTable.end (); it++)
+    {
+      std::cout << "    faceId: " << it->second << ", linkId:" << it->first << std::endl; 
+    }
+  std::cout << "  FIB:" << std::endl;
+  //TODO: print FIB
 }
 
 } // namespace emulator

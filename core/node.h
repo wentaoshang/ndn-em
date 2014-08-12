@@ -52,10 +52,13 @@ public:
   }
 
   bool
-  AddLink (boost::shared_ptr<Link>&, boost::shared_ptr<LinkFace>&);
+  AddLink (const boost::shared_ptr<Link>&, boost::shared_ptr<LinkFace>&);
 
   void
   Start ();
+
+  void
+  PrintInfo ();
 
 private:
   void

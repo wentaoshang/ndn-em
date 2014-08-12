@@ -5,109 +5,136 @@
 #include <sstream>
 #include <exception>
 #include <boost/lexical_cast.hpp>
-#include <boost/utility.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/assert.hpp>
+#include <boost/foreach.hpp>
 
 #include "emulator.h"
 
 namespace emulator {
 
-/**
- * Node config file is in the following space-separated format:
- *   [id] [unix-socket-path] [app-file-path]
- *
- * The line started with a ';' is treated as comment and ignored.
- *
- * This function will create the nodes without adding links.
- */
 void
-Emulator::ReadNodeConfig (const char* path)
+Emulator::ReadNetworkConfig (const char* path)
 {
-  std::ifstream is (path);
-  if (!is.is_open ())
-    throw std::invalid_argument ("Error opening node config file");
+  std::cout << "[Emulator::ReadNetworkConfig] from file: " << path << std::endl;
 
-  std::cout << "[Emulator::ReadNodeConfig] " << path << std::endl;
+  using boost::property_tree::ptree;
+  ptree config;
+  boost::property_tree::xml_parser::read_xml (path, config);
 
-  std::string line;
-  while (std::getline (is, line))
+  ptree& links = config.get_child ("Config.Links");
+  BOOST_FOREACH (ptree::value_type& v, links)
     {
-      if (line[0] == ';')  // ignore comment line
-	continue;
+      BOOST_ASSERT (v.first == "Link");
+      const std::string linkId = v.second.get<std::string> ("Id");
+      std::map<std::string, boost::shared_ptr<Link> >::iterator it = m_linkTable.find (linkId);
+      if (it == m_linkTable.end ())
+        m_linkTable[linkId] = boost::make_shared<Link> (linkId);
+      else
+        throw std::runtime_error ("[Emulator::ReadNetworkConfig] duplicate link id " + linkId);
+    }
 
-      std::istringstream iss (line);
-      std::string nodeId, socketPath, appPath;
-      iss >> nodeId >> socketPath >> appPath;
+  ptree& nodes = config.get_child ("Config.Nodes");
+  BOOST_FOREACH (ptree::value_type& v, nodes)
+    {
+      BOOST_ASSERT (v.first == "Node");
+      ptree& node = v.second;
+      const std::string nodeId = node.get<std::string> ("Id");
+      const std::string path = node.get<std::string> ("Path");
+      std::map<std::string, boost::shared_ptr<Node> >::iterator it = m_nodeTable.find (nodeId);
+      if (it == m_nodeTable.end ())
+        {
+          boost::shared_ptr<Node> pnode
+            (boost::make_shared<Node> (nodeId, path, boost::ref (m_ioService)));
 
-      //TODO: sanitation check
+          BOOST_FOREACH (ptree::value_type& v, node.get_child ("Links"))
+            {
+              BOOST_ASSERT (v.first == "LinkId");
+              const std::string linkId = v.second.data ();
+              std::map<std::string, boost::shared_ptr<Link> >::iterator it =
+                m_linkTable.find (linkId);
+              if (it != m_linkTable.end ())
+                {
+                  const boost::shared_ptr<Link>& link = it->second;
+                  boost::shared_ptr<LinkFace> face;
+                  if (pnode->AddLink (link, face))
+                    link->AddNode (face);
+                  else
+                    std::cerr << "[Emulator::ReadNetworkConfig] duplicate link id "
+                              << linkId << " for node " << nodeId << std::endl;
+                }
+              else
+                throw std::runtime_error ("[Emulator::ReadNetworkConfig] unkown link id " + linkId
+                                          + " for node " + nodeId);
+            }
 
-      // For now, ignore app file path
-      m_nodeTable[nodeId] =
-	boost::make_shared<Node> (nodeId, socketPath, boost::ref (m_ioService));
+          BOOST_FOREACH (ptree::value_type& v, node.get_child ("Routes"))
+            {
+              BOOST_ASSERT (v.first == "Route");
+            }
+
+          m_nodeTable[nodeId] = pnode;
+        }
+      else
+        throw std::runtime_error ("[Emulator::ReadNetworkConfig] duplicate node id " + nodeId);
+    }
+  this->PrintNodes();
+
+  ptree& matrices = config.get_child ("Config.Matrices");
+  BOOST_FOREACH (ptree::value_type& v, matrices)
+    {
+      BOOST_ASSERT (v.first == "Matrix");
+      ptree& matrix = v.second;
+      const std::string linkId = matrix.get<std::string> ("LinkId");
+      std::map<std::string, boost::shared_ptr<Link> >::iterator it =
+        m_linkTable.find (linkId);
+      if (it != m_linkTable.end ())
+        {
+          const boost::shared_ptr<Link>& link = it->second;
+          ptree& connections = matrix.get_child ("Connections");
+          BOOST_FOREACH (ptree::value_type& v, connections)
+            {
+              BOOST_ASSERT (v.first == "Connection");
+              ptree& con = v.second;
+              const std::string from = con.get<std::string> ("From");
+              const std::string to = con.get<std::string> ("To");
+              const double rate = con.get<double> ("LossRate");
+
+              // For now, only support packet loss rate
+              boost::shared_ptr<LinkAttribute> attr =
+                boost::make_shared<LinkAttribute> (rate);
+
+              link->AddConnection (from, to, attr);
+            }
+        }
+      else
+        throw std::runtime_error ("[Emulator::ReadNetworkConfig] unkown matrix link id " + linkId);
+    }
+  this->PrintLinks ();
+}
+
+void
+Emulator::PrintNodes ()
+{
+  std::cout << "[Emulator::PrintNodes] nodes summary:" << std::endl;
+  std::map<std::string, boost::shared_ptr<Node> >::iterator it;
+  for (it = m_nodeTable.begin (); it != m_nodeTable.end (); it++)
+    {
+      it->second->PrintInfo ();
     }
 }
 
-/**
- * Link config file is in the following space-separated format:
- *   [srcID] [dstID] [linkID] [link-paramters] ...
- * which represents a link from srcID to dstID.
- *
- * The line started with a ';' is treated as comment and ignored.
- *
- * This function will add links to nodes and connection between nodes on the link.
- */
 void
-Emulator::ReadLinkConfig (const char* path)
+Emulator::PrintLinks ()
 {
-  std::ifstream is (path);
-  if (!is.is_open ())
-    throw std::invalid_argument ("Error opening link config file");
-
-  std::cout << "[Emulator::ReadLinkConfig] " << path << std::endl;
-
-  std::string line;
-  while (std::getline (is, line))
+  std::cout << "[Emulator::PrintLinks] links summary:" << std::endl;
+  std::map<std::string, boost::shared_ptr<Link> >::iterator it;
+  for (it = m_linkTable.begin (); it != m_linkTable.end (); it++)
     {
-      if (line[0] == ';')  // ignore comment line
-	continue;
-
-      std::istringstream iss (line);
-      std::string from, to, linkId, param;
-      iss >> from >> to >> linkId >> param;
-
-      boost::shared_ptr<Link> link;
-      std::map<std::string, boost::shared_ptr<Link> >::iterator it = m_linkTable.find (linkId);
-      if (it == m_linkTable.end ())
-        {
-          link = boost::make_shared<Link> (linkId);
-          m_linkTable[linkId] = link;
-        }
-      else
-        link = it->second;
-
-      // For now, only support packet loss rate
-      boost::shared_ptr<LinkAttribute> attr =
-        boost::make_shared<LinkAttribute> (boost::lexical_cast<double> (param));
-
-      //TODO: sanitation check
-
-      // Add connection to link
-      link->AddConnection (from, to, attr);
-
-      // Add link to nodes and nodes to link
-      // Check for duplication
-      boost::shared_ptr<LinkFace> face;
-      if (m_nodeTable[from]->AddLink (link, face))
-        link->AddNode (face);      
-
-      if (m_nodeTable[to]->AddLink (link, face))
-        link->AddNode (face);
-    }
-
-  std::map<std::string, boost::shared_ptr<Link> >::iterator it0;
-  for (it0 = m_linkTable.begin (); it0 != m_linkTable.end (); it0++)
-    {
-      std::cout << "[Emulator::ReadLinkConfig] LinkMatrix for " << it0->first << ":" << std::endl;
-      it0->second->PrintLinkMatrix ();
+      std::cout << "Link id: " << it->first << std::endl;
+      std::cout << "  LinkMatrix: " << std::endl;
+      it->second->PrintLinkMatrix ("    ");
     }
 }
 
