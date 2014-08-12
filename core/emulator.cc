@@ -69,7 +69,7 @@ Emulator::ReadNetworkConfig (const char* path)
             }
 
           // Static routes are optional
-          boost::optional<ptree&> routes = node.get_child ("Routes");
+          boost::optional<ptree&> routes = node.get_child_optional ("Routes");
           if (routes)
             {
               BOOST_FOREACH (ptree::value_type& v, *routes)
