@@ -18,15 +18,9 @@ public:
   void
   Start ()
   {
-    ndn::Interest i (ndn::Name ("/test/app/data"));
-    i.setScope (1);
-    i.setInterestLifetime (ndn::time::seconds(1));
-    i.setMustBeFresh (true);
-
     this->SendInterest ();
 
-    // ioService.run() will block until all events finished or ioService.stop() is called
-    m_ioService.run();
+    m_ioService.run ();
   }
 
 private:
