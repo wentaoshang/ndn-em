@@ -15,7 +15,7 @@ CacheManager::FindMatchingData (const boost::shared_ptr<ndn::Interest>& i,
   cache_type::iterator it;
   for (it = m_queue.begin (); it != m_queue.end (); it++)
     {
-      // For now, ignore selectors
+      // For now, ignore selectors and always return fresh data only
       if (i->getName ().isPrefixOf (it->data->getName ())
 	  && it->expire > now)
 	{

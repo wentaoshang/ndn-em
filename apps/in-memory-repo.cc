@@ -10,28 +10,93 @@ namespace ndnsensor {
 void
 Repo::HandleData (const Interest& interest, Data& data)
 {
-  std::cout << "I: " << interest.getName ().toUri () << std::endl;
-  std::cout << "D: " << data.getName ().toUri () << std::endl;
-  assert (data.getName ().size () == 4);
-  int seqNum = boost::lexical_cast<int> (data.getName ().get (3).toUri ());
-  std::cout << "Seq: " << seqNum << ", m_seq: " << m_sequence << std::endl;
-  if (m_store.find (seqNum) == m_store.end ())
-    m_store[seqNum] = ndn::make_shared<ndn::Data> (data);
-  else
-    std::cerr << "Data is already in store" << std::endl;
+  const Name& dName = data.getName ();
+  std::cout << "[HandleData] D: " << dName.toUri () << std::endl;
+  assert (dName.size () == 4);
+
+  const name::Component& seq = dName.get (3);
+  int seqNum = boost::lexical_cast<int> (seq.toUri ());
+  std::cout << "[HandleData] seq: " << seqNum << ", m_seq: " << m_sequence << std::endl;
+  if (m_store.find (seqNum) != m_store.end ())
+    {
+      std::cerr << "[HandleData] data is already in store" << std::endl;
+      return;
+    }
+
+  // Package sensor data and sign it with repo's key
+  Name repoDataName ("/wsn/data/temperature");
+  repoDataName.append (dName.get (3));
+  shared_ptr<Data> repoData (make_shared<Data> ());
+  repoData->setName (repoDataName);
+  repoData->setFreshnessPeriod (time::milliseconds(5000));
+  repoData->setContent (data.getContent ());
+
+  // Sign Data packet with default identity
+  m_keyChain.sign (*repoData);
+
+  // Return Data packet to the requester
+  std::cout << "[HandleData] store data: " << repoData->getName () << std::endl;
+
+  m_store[seqNum] = repoData;
+
   m_sequence = seqNum + 1;
 }
 
 void
-Repo::HandleSensorInterest (const Name& name, const Interest& interest)
+Repo::HandlePushInterest (const Name& name, const Interest& interest)
 {
-  std::cout << "<< I: " << interest << std::endl;
+  const Name& iName = interest.getName ();
+  std::cout << "[PushInterest] I: " << iName << std::endl;
+  assert (iName.size () == 5);
+
+  const name::Component& seq = iName.get (3);
+  int seqNum = boost::lexical_cast<int> (seq.toUri ());
+  std::cout << "[PushInterest] seq: " << seqNum << ", m_seq: " << m_sequence << std::endl;
+  if (m_store.find (seqNum) != m_store.end ())
+    {
+      std::cerr << "[PushInterest] data is already in store" << std::endl;
+      return;
+    }
+
+  const Block& info = iName.get (4).wireEncode ();
+
+  // Package sensor data and sign it with repo's key
+  Name repoDataName ("/wsn/data/temperature");
+  repoDataName.append (seq);
+  shared_ptr<Data> repoData (make_shared<Data> ());
+  repoData->setName (repoDataName);
+  repoData->setFreshnessPeriod (time::milliseconds(5000));
+  repoData->setContent (info);
+
+  // Sign Data packet with default identity
+  m_keyChain.sign (*repoData);
+
+  // Return Data packet to the requester
+  std::cout << "[PushInterest] store data: " << repoData->getName () << std::endl;
+
+  m_store[seqNum] = repoData;
+
+  m_sequence = seqNum + 1;
+
+  Name ackName (iName);
+  ackName.append ("ack");
+  shared_ptr<Data> ack (make_shared<Data> ());
+  ack->setName (ackName);
+  ack->setFreshnessPeriod (time::milliseconds(100));
+  ack->setContent (info);
+  m_keyChain.sign (*ack);
+
+  // Research question: do we still need ack when there are multiple repos?
+  // Interests will be multicasted to all of them and it is not a good
+  // idea to have acks storm.
+  std::cout << "[PushInterest] reply with ack: " << ack->getName () << std::endl;
+  m_face.put (*ack);
 }
 
 void
 Repo::HandleUserInterest (const Name& name, const Interest& interest)
 {
-  std::cout << "<< I: " << interest << std::endl;
+  std::cout << "[UserInterest] I: " << interest.getName () << std::endl;
 }
 
 void
@@ -42,11 +107,10 @@ Repo::PollData ()
     data_prefix.append (boost::lexical_cast<std::string> (m_sequence));
 
   ndn::Interest i (data_prefix);
-  i.setScope (1);
   i.setInterestLifetime (ndn::time::milliseconds (2000));
   i.setMustBeFresh (true);
 
-  std::cout << ">> I: " << i.toUri () << std::endl;
+  std::cout << "[PollData] send interest: " << i << std::endl;
 
   m_face.expressInterest (i,
 			  ndn::bind (&Repo::HandleData, this, _1, _2),
@@ -67,10 +131,10 @@ Repo::Start ()
 
   if (m_mode == POLL)
     this->PollData ();
-  else
-    // Sensors send interest to the repo using the repo prefix
-    m_face.setInterestFilter ("/wsn/repo",
-			      ndn::bind (&Repo::HandleSensorInterest, this, _1, _2),
+  else if (m_mode == PUSH)
+    // Sensors send push interest to the repo using the repo prefix
+    m_face.setInterestFilter ("/wsn/repo/push",
+			      ndn::bind (&Repo::HandlePushInterest, this, _1, _2),
 			      RegisterPrefixSuccessCallback (),
 			      ndn::bind (&Repo::HandleRegisterFailed, this, _2));
 

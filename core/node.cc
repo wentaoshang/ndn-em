@@ -217,6 +217,8 @@ Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d)
       boost::shared_ptr<Packet> pkt (boost::make_shared<DataPacket> (d));
       this->ForwardToFaces (pkt, outList);
     }
+  else
+    NDNEM_LOG_DEBUG ("[Node::HandleData] (" << m_id << ":" << faceId << ") no pending interest");
 }
 
 void

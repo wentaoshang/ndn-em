@@ -8,13 +8,7 @@
 namespace ndnsensor {
 
 struct SensorInfo {
-  enum Code {
-    REPORT,
-    NOTIFY
-  };
-
-  uint16_t code;
-  uint16_t value;
+  uint32_t value;
   uint32_t timestamp;  // in seconds
 };
 

@@ -42,11 +42,11 @@ private:
   void
   HandleTimeout (const ndn::Interest& interest)
   {
-    std::cerr << "Timeout: " << interest.getName () << std::endl;
+    std::cerr << "[Timeout]: " << interest.getName () << std::endl;
   }
 
   void
-  HandleSensorInterest (const ndn::Name&, const ndn::Interest&);
+  HandlePushInterest (const ndn::Name&, const ndn::Interest&);
 
   void
   HandleUserInterest (const ndn::Name&, const ndn::Interest&);

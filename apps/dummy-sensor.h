@@ -49,6 +49,18 @@ public:
   SchedulePush ();
 
   void
+  HandlePushAck (const ndn::Interest& interest, ndn::Data& data)
+  {
+    std::cout << "[PushAck]: " << data.getName () << std::endl;
+  }
+
+  void
+  HandlePushTimeout (const ndn::Interest& interest)
+  {
+    std::cerr << "[Timeout]: " << interest.getName () << std::endl;
+  }
+
+  void
   SchedulePhoneHome ();
 
   void
@@ -66,7 +78,7 @@ private:
   ndn::KeyChain m_keyChain;
   ndn::Scheduler m_scheduler;
   int m_sequence;
-  uint16_t m_reading;
+  uint32_t m_reading;
 };
 
 

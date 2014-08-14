@@ -11,24 +11,23 @@ namespace ndnsensor {
 void
 Sensor::HandleInterest (const Name& name, const Interest& interest)
 {
-  std::cout << "<< I: " << interest.getName ().toUri () << std::endl;
+  std::cout << "[HandleInterest] I: " << interest.getName ().toUri () << std::endl;
 
   // Create new name, based on Interest's name
   Name dataName (interest.getName ());
   if (dataName.size () == 3)
-    dataName.append(boost::lexical_cast<std::string> (m_sequence));
+    dataName.append (boost::lexical_cast<std::string> (m_sequence));
   else if (dataName.size () == 4)
     {
       int seqNum = boost::lexical_cast<int> (dataName.get (3).toUri ());
       if (seqNum != m_sequence)
         {
-          std::cerr << "Sequence number out of sync. Disgard interest" << std::endl;
+          std::cerr << "[HandleInterest] sequence number out of sync. Disgard interest" << std::endl;
           return;
         }
     }
 
   struct SensorInfo info;
-  info.code = SensorInfo::REPORT;
   info.value = m_reading;
   info.timestamp = ::time (NULL);
 
@@ -42,13 +41,35 @@ Sensor::HandleInterest (const Name& name, const Interest& interest)
   m_keyChain.sign (*data);
 
   // Return Data packet to the requester
-  std::cout << ">> D: " << *data;
+  std::cout << "[HandleInterest] return data: " << data->getName () << std::endl;
   m_face.put (*data);
 }
 
 void
 Sensor::SchedulePush ()
 {
+  struct SensorInfo info;
+  info.value = m_reading;
+  info.timestamp = ::time (NULL);
+
+  Name pushName ("/wsn/repo/push");
+  pushName.append (boost::lexical_cast<std::string> (m_sequence));
+  pushName.append (name::Component (reinterpret_cast<const uint8_t*> (&info), sizeof (info)));
+
+  //TODO: push interest needs to be signed
+  ndn::Interest i (pushName);
+  i.setInterestLifetime (ndn::time::milliseconds (2000));
+  i.setMustBeFresh (true);
+
+  std::cout << "[SchedulePush] send interest: " << i << std::endl;
+
+  m_face.expressInterest (i,
+			  ndn::bind (&Sensor::HandlePushAck, this, _1, _2),
+			  ndn::bind (&Sensor::HandlePushTimeout, this, _1));
+
+  // Schedule the next push interest
+  m_scheduler.scheduleEvent (ndn::time::milliseconds (5000),
+			     ndn::bind (&Sensor::SchedulePush, this));
 }
 
 void
@@ -61,7 +82,7 @@ Sensor::ScheduleNewReading ()
 {
   m_sequence++;
   // m_value = ...
-  std::cout << "Generate new sequence number: " << m_sequence << std::endl;
+  std::cout << "[ScheduleNewReading] m_sequence: " << m_sequence << std::endl;
 
   // Generate "new" reading every 5 sec
   m_scheduler.scheduleEvent (ndn::time::milliseconds (5000),
