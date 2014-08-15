@@ -11,7 +11,7 @@ namespace ndnsensor {
 void
 Sensor::HandleInterest (const Name& name, const Interest& interest)
 {
-  std::cout << "[HandleInterest] <<I: " << interest.getName ().toUri () << std::endl;
+  std::cout << "[HandleInterest] <<I: " << interest.getName () << std::endl;
 
   // Create new name, based on Interest's name
   Name dataName (interest.getName ());
@@ -73,8 +73,24 @@ Sensor::SchedulePush ()
 }
 
 void
-Sensor::SchedulePhoneHome ()
+Sensor::ScheduleNotify ()
 {
+  Name pushName ("/wsn/repo/notify");
+  pushName.append (boost::lexical_cast<std::string> (m_sequence));
+
+  ndn::Interest i (pushName);
+  i.setInterestLifetime (ndn::time::milliseconds (2000));
+  i.setMustBeFresh (true);
+
+  std::cout << "[ScheduleNotify] >>I: " << i << std::endl;
+
+  m_face.expressInterest (i,
+			  ndn::bind (&Sensor::HandleNotifyAck, this, _1, _2),
+			  ndn::bind (&Sensor::HandleNotifyTimeout, this, _1));
+
+  // Schedule the next push interest
+  m_scheduler.scheduleEvent (ndn::time::milliseconds (5000),
+			     ndn::bind (&Sensor::ScheduleNotify, this));
 }
 
 void
@@ -102,8 +118,8 @@ Sensor::Start ()
 
   if (m_mode == Sensor::PUSH)
     this->SchedulePush ();
-  else if (m_mode == Sensor::PHONE_HOME)
-    this->SchedulePhoneHome ();
+  else if (m_mode == Sensor::NOTIFY)
+    this->ScheduleNotify ();
 
   m_ioService.run ();
 }
@@ -122,8 +138,8 @@ main (int argc, char* argv[])
     mode = Sensor::POLL;
   else if (strcmp (argv[1], "push") == 0)
     mode = Sensor::PUSH;
-  else if (strcmp (argv[2], "phonehome") == 0)
-    mode = Sensor::PHONE_HOME;
+  else if (strcmp (argv[1], "notify") == 0)
+    mode = Sensor::NOTIFY;
   else
     {
       std::cerr << "Unknown operation mode: " << argv[1] << std::endl;

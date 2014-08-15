@@ -19,7 +19,7 @@ public:
   enum OptMode {
     POLL,
     PUSH,
-    PHONE_HOME
+    NOTIFY
   };
 
   Repo (OptMode mode, const std::string& path)
@@ -49,6 +49,9 @@ private:
 
   void
   HandlePushInterest (const ndn::Name&, const ndn::Interest&);
+
+  void
+  HandleNotifyInterest (const ndn::Name&, const ndn::Interest&);
 
   void
   HandleUserInterest (const ndn::Name&, const ndn::Interest&);

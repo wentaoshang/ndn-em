@@ -94,6 +94,30 @@ Repo::HandlePushInterest (const Name& name, const Interest& interest)
 }
 
 void
+Repo::HandleNotifyInterest (const Name& name, const Interest& interest)
+{
+  const Name& iName = interest.getName ();
+  std::cout << "[NotifyInterest] <<I: " << iName << std::endl;
+  assert (iName.size () == 4);
+
+  const name::Component& seq = iName.get (3);
+  std::cout << "[NotifyInterest] seq: " << seq << std::endl;
+
+  ndn::Name data_prefix ("/wsn/thermometer/read");
+  data_prefix.append (seq);
+
+  ndn::Interest i (data_prefix);
+  i.setInterestLifetime (ndn::time::milliseconds (2000));
+  i.setMustBeFresh (true);
+
+  std::cout << "[NotifyInterest] >>I: " << i << std::endl;
+
+  m_face.expressInterest (i,
+			  ndn::bind (&Repo::HandleData, this, _1, _2),
+			  ndn::bind (&Repo::HandleTimeout, this, _1));
+}
+
+void
 Repo::HandleUserInterest (const Name& name, const Interest& interest)
 {
   std::cout << "[UserInterest] <<I: " << interest.getName () << std::endl;
@@ -137,6 +161,11 @@ Repo::Start ()
 			      ndn::bind (&Repo::HandlePushInterest, this, _1, _2),
 			      RegisterPrefixSuccessCallback (),
 			      ndn::bind (&Repo::HandleRegisterFailed, this, _2));
+  else if (m_mode == NOTIFY)
+    m_face.setInterestFilter ("/wsn/repo/notify",
+			      ndn::bind (&Repo::HandleNotifyInterest, this, _1, _2),
+			      RegisterPrefixSuccessCallback (),
+			      ndn::bind (&Repo::HandleRegisterFailed, this, _2));
 
   m_ioService.run ();
 }
@@ -155,8 +184,8 @@ main (int argc, char* argv[])
     mode = Repo::POLL;
   else if (strcmp (argv[1], "push") == 0)
     mode = Repo::PUSH;
-  else if (strcmp (argv[2], "phonehome") == 0)
-    mode = Repo::PHONE_HOME;
+  else if (strcmp (argv[1], "notify") == 0)
+    mode = Repo::NOTIFY;
   else
     {
       std::cerr << "Unknown operation mode: " << argv[1] << std::endl;

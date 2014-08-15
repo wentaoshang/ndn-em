@@ -19,7 +19,7 @@ public:
   enum OptMode {
     POLL,
     PUSH,
-    PHONE_HOME
+    NOTIFY
   };
 
   Sensor (OptMode mode, const std::string& path)
@@ -61,7 +61,19 @@ public:
   }
 
   void
-  SchedulePhoneHome ();
+  ScheduleNotify ();
+
+  void
+  HandleNotifyAck (const ndn::Interest& interest, ndn::Data& data)
+  {
+    std::cout << "[NotifyAck] <<D: " << data.getName () << std::endl;
+  }
+
+  void
+  HandleNotifyTimeout (const ndn::Interest& interest)
+  {
+    std::cerr << "[Timeout] I: " << interest.getName () << std::endl;
+  }
 
   void
   ScheduleNewReading ();
