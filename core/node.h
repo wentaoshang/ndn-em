@@ -35,6 +35,7 @@ public:
     , m_isListening (false)
     , m_faceCounter (1)  // face id 0 is reserved for fib manager
     , m_pit (10000, ioService)  // Cleanup Pit every 10 sec
+    , m_fib (m_id)
     , m_cacheManager (m_id, cacheLimit, ioService)
   {
   }

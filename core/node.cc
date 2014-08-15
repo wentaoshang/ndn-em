@@ -222,7 +222,7 @@ Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d)
 void
 Node::RemoveFace (const int faceId)
 {
-  NDNEM_LOG_DEBUG ("[Node::RemoveFace] id = " << m_id << ": remove face " << faceId);
+  NDNEM_LOG_DEBUG ("[Node::RemoveFace] (" << m_id << ":" << faceId << ")");
   m_faceTable.erase (faceId);
   m_fibManager->CleanUpFib (faceId);
 }

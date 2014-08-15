@@ -27,7 +27,7 @@ Fib::LookUp (const ndn::Name& name, std::set<int>& out)
 	  // Found match, stop now and copy all faces to "out"
 	  std::set<int>& faces = it->second;
           std::stringstream ss;
-	  ss << "[Fib::LookUp] " << name << " ->";
+	  ss << "[Fib::LookUp] (" << m_nodeId << ") " << name << " ->";
 	  std::set<int>::iterator fit;
 	  for (fit = faces.begin (); fit != faces.end (); fit++)
 	    {

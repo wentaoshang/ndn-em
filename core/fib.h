@@ -15,6 +15,12 @@ namespace node {
 
 class Fib {
 public:
+  explicit
+  Fib (const std::string& nodeId)
+    : m_nodeId (nodeId)
+  {
+  }
+
   typedef boost::unordered_map<ndn::Name, std::set<int>, ndn_name_hash> fib_type;
 
   void
@@ -55,6 +61,7 @@ public:
   Print (const std::string& = "");
 
 private:
+  const std::string& m_nodeId;
   //TODO: support cost for each route
   boost::unordered_map<ndn::Name, std::set<int>, ndn_name_hash> m_fib;
 };
