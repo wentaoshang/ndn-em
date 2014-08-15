@@ -41,11 +41,15 @@ Emulator::ReadNetworkConfig (const char* path)
       ptree& node = v.second;
       const std::string nodeId = node.get<std::string> ("Id");
       const std::string path = node.get<std::string> ("Path");
+      boost::optional<int> cacheLimit = node.get_optional<int> ("CacheLimit");
+      if (!cacheLimit)
+        cacheLimit = boost::optional<int> (102400);  // default cache size is 100KB
+
       std::map<std::string, boost::shared_ptr<Node> >::iterator it = m_nodeTable.find (nodeId);
       if (it == m_nodeTable.end ())
         {
           boost::shared_ptr<Node> pnode
-            (boost::make_shared<Node> (nodeId, path, boost::ref (m_ioService)));
+            (boost::make_shared<Node> (nodeId, path, *cacheLimit, boost::ref (m_ioService)));
 
           BOOST_FOREACH (ptree::value_type& v, node.get_child ("Links"))
             {

@@ -78,6 +78,7 @@
     <Node>
       <Id>n5</Id>
       <Path>/tmp/node5</Path>
+      <CacheLimit>1024000</CacheLimit>
       <Links>
 	<LinkId>wpan1</LinkId>
       </Links>

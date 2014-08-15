@@ -40,11 +40,7 @@ Node::Start ()
      boost::bind (&Node::HandleData, this, _1, _2));
 
   // Setup cache manager
-  m_cacheManager = boost::make_shared<node::CacheManager>
-    (m_id, 1000, 10000, boost::ref (m_ioService));
-
-  // Let stale data stay in cache until cache replacement policy clears them out
-  //m_cacheManager->ScheduleCleanUp ();
+  m_cacheManager.ScheduleCleanUp ();
 
   // Wait for connection from clients
   int faceId = m_faceCounter++;
@@ -159,7 +155,7 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
 
   // Check cache
   boost::shared_ptr<ndn::Data> d;
-  if (m_cacheManager->FindMatchingData (i, d))
+  if (m_cacheManager.FindMatchingData (i, d))
     {
       NDNEM_LOG_TRACE ("[Node::HandleInterest] (" << m_id << ":" << faceId
                        << ") Match found in cache");
@@ -214,7 +210,7 @@ Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d)
   if (!outList.empty ())
     {
       // Cache the data only when we have pending interest for it
-      m_cacheManager->Insert (d);
+      m_cacheManager.Insert (d);
 
       boost::shared_ptr<Packet> pkt (boost::make_shared<DataPacket> (d));
       this->ForwardToFaces (pkt, outList);
@@ -236,6 +232,7 @@ Node::PrintInfo ()
 {
   std::cout << "Node id: " << m_id << std::endl;
   std::cout << "  Unix socket path: " << m_socketPath << std::endl;
+  std::cout << "  Cache limit: " << (m_cacheManager.GetLimit () >> 10) << " KB" << std::endl;
   std::map<std::string, int>::iterator it;
   std::cout << "  Link table:" << std::endl;
   for (it = m_linkTable.begin (); it != m_linkTable.end (); it++)

@@ -34,14 +34,21 @@ public:
 
 class CacheManager {
 public:
-  CacheManager (const std::string& nodeId, int limit, long interval,
+  static const boost::posix_time::time_duration CACHE_PURGE_INTERVAL;
+
+  CacheManager (const std::string& nodeId, int limit,
 		boost::asio::io_service& ioService)
     : m_nodeId (nodeId)
     , m_count (0)
     , m_limit (limit)
-    , m_cleanupInterval (boost::posix_time::milliseconds (interval))
     , m_cleanupTimer (ioService)
   {
+  }
+
+  int
+  GetLimit () const
+  {
+    return m_limit;
   }
 
   typedef std::deque<CacheEntry> cache_type;
@@ -56,10 +63,10 @@ public:
   void
   ScheduleCleanUp ()
   {
-    m_cleanupTimer.expires_from_now (m_cleanupInterval);
+    m_cleanupTimer.expires_from_now (CACHE_PURGE_INTERVAL);
     m_cleanupTimer.async_wait (boost::bind (&CacheManager::CleanUp, this, _1));
   }
-  
+
 private:
   void
   CleanUp (const boost::system::error_code&);
@@ -69,7 +76,6 @@ private:
   std::deque<CacheEntry> m_queue; // FIFO queue
   int m_count;
   const int m_limit;  // cache limit in # of bytes
-  boost::posix_time::time_duration m_cleanupInterval;
   boost::asio::deadline_timer m_cleanupTimer;
 };
 

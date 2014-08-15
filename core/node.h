@@ -26,7 +26,7 @@ namespace emulator {
 class Node : boost::noncopyable {
 public:
   Node (const std::string& id, const std::string& socketPath,
-        boost::asio::io_service& ioService)
+        int cacheLimit, boost::asio::io_service& ioService)
     : m_id (id)
     , m_socketPath (socketPath)
     , m_endpoint (m_socketPath)
@@ -35,6 +35,7 @@ public:
     , m_isListening (false)
     , m_faceCounter (1)  // face id 0 is reserved for fib manager
     , m_pit (10000, ioService)  // Cleanup Pit every 10 sec
+    , m_cacheManager (m_id, cacheLimit, ioService)
   {
   }
 
@@ -127,7 +128,7 @@ private:
   boost::shared_ptr<node::FibManager> m_fibManager;
 
   // CS
-  boost::shared_ptr<node::CacheManager> m_cacheManager;
+  node::CacheManager m_cacheManager;
 };
 
 } // namespace emulator

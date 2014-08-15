@@ -5,6 +5,9 @@
 namespace emulator {
 namespace node {
 
+const boost::posix_time::time_duration CacheManager::CACHE_PURGE_INTERVAL =
+  boost::posix_time::milliseconds (3600000);  // 1 h
+
 bool
 CacheManager::FindMatchingData (const boost::shared_ptr<ndn::Interest>& i,
                                 boost::shared_ptr<ndn::Data>& out)
