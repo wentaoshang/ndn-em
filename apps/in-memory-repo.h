@@ -42,7 +42,9 @@ private:
   void
   HandleTimeout (const ndn::Interest& interest)
   {
-    std::cerr << "[Timeout]: " << interest.getName () << std::endl;
+    std::cerr << "[Timeout] I: " << interest.getName () << std::endl;
+    std::cerr << "[Timeout] reset sequence number" << std::endl;
+    m_sequence = -1;
   }
 
   void

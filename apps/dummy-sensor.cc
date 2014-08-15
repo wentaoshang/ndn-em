@@ -11,7 +11,7 @@ namespace ndnsensor {
 void
 Sensor::HandleInterest (const Name& name, const Interest& interest)
 {
-  std::cout << "[HandleInterest] I: " << interest.getName ().toUri () << std::endl;
+  std::cout << "[HandleInterest] <<I: " << interest.getName ().toUri () << std::endl;
 
   // Create new name, based on Interest's name
   Name dataName (interest.getName ());
@@ -41,7 +41,7 @@ Sensor::HandleInterest (const Name& name, const Interest& interest)
   m_keyChain.sign (*data);
 
   // Return Data packet to the requester
-  std::cout << "[HandleInterest] return data: " << data->getName () << std::endl;
+  std::cout << "[HandleInterest] >>D: " << data->getName () << std::endl;
   m_face.put (*data);
 }
 
@@ -61,7 +61,7 @@ Sensor::SchedulePush ()
   i.setInterestLifetime (ndn::time::milliseconds (2000));
   i.setMustBeFresh (true);
 
-  std::cout << "[SchedulePush] send interest: " << i << std::endl;
+  std::cout << "[SchedulePush] >>I: " << i << std::endl;
 
   m_face.expressInterest (i,
 			  ndn::bind (&Sensor::HandlePushAck, this, _1, _2),

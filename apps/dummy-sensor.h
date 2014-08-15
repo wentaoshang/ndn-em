@@ -51,13 +51,13 @@ public:
   void
   HandlePushAck (const ndn::Interest& interest, ndn::Data& data)
   {
-    std::cout << "[PushAck]: " << data.getName () << std::endl;
+    std::cout << "[PushAck] <<D: " << data.getName () << std::endl;
   }
 
   void
   HandlePushTimeout (const ndn::Interest& interest)
   {
-    std::cerr << "[Timeout]: " << interest.getName () << std::endl;
+    std::cerr << "[Timeout] I: " << interest.getName () << std::endl;
   }
 
   void

@@ -11,15 +11,15 @@ void
 Repo::HandleData (const Interest& interest, Data& data)
 {
   const Name& dName = data.getName ();
-  std::cout << "[HandleData] D: " << dName.toUri () << std::endl;
+  std::cout << "[HandleData] <<D: " << dName.toUri () << std::endl;
   assert (dName.size () == 4);
 
   const name::Component& seq = dName.get (3);
   int seqNum = boost::lexical_cast<int> (seq.toUri ());
-  std::cout << "[HandleData] seq: " << seqNum << ", m_seq: " << m_sequence << std::endl;
+  std::cout << "[HandleData] seq: " << seqNum << ", m_sequence: " << m_sequence << std::endl;
   if (m_store.find (seqNum) != m_store.end ())
     {
-      std::cerr << "[HandleData] data is already in store" << std::endl;
+      std::cerr << "[HandleData] data already in store" << std::endl;
       return;
     }
 
@@ -35,7 +35,7 @@ Repo::HandleData (const Interest& interest, Data& data)
   m_keyChain.sign (*repoData);
 
   // Return Data packet to the requester
-  std::cout << "[HandleData] store data: " << repoData->getName () << std::endl;
+  std::cout << "[HandleData] store: " << repoData->getName () << std::endl;
 
   m_store[seqNum] = repoData;
 
@@ -46,15 +46,15 @@ void
 Repo::HandlePushInterest (const Name& name, const Interest& interest)
 {
   const Name& iName = interest.getName ();
-  std::cout << "[PushInterest] I: " << iName << std::endl;
+  std::cout << "[PushInterest] <<I: " << iName << std::endl;
   assert (iName.size () == 5);
 
   const name::Component& seq = iName.get (3);
   int seqNum = boost::lexical_cast<int> (seq.toUri ());
-  std::cout << "[PushInterest] seq: " << seqNum << ", m_seq: " << m_sequence << std::endl;
+  std::cout << "[PushInterest] seq: " << seqNum << ", m_sequence: " << m_sequence << std::endl;
   if (m_store.find (seqNum) != m_store.end ())
     {
-      std::cerr << "[PushInterest] data is already in store" << std::endl;
+      std::cerr << "[PushInterest] data already in store" << std::endl;
       return;
     }
 
@@ -72,7 +72,7 @@ Repo::HandlePushInterest (const Name& name, const Interest& interest)
   m_keyChain.sign (*repoData);
 
   // Return Data packet to the requester
-  std::cout << "[PushInterest] store data: " << repoData->getName () << std::endl;
+  std::cout << "[PushInterest] store: " << repoData->getName () << std::endl;
 
   m_store[seqNum] = repoData;
 
@@ -89,14 +89,14 @@ Repo::HandlePushInterest (const Name& name, const Interest& interest)
   // Research question: do we still need ack when there are multiple repos?
   // Interests will be multicasted to all of them and it is not a good
   // idea to have acks storm.
-  std::cout << "[PushInterest] reply with ack: " << ack->getName () << std::endl;
+  std::cout << "[PushInterest] >>D: " << ack->getName () << std::endl;
   m_face.put (*ack);
 }
 
 void
 Repo::HandleUserInterest (const Name& name, const Interest& interest)
 {
-  std::cout << "[UserInterest] I: " << interest.getName () << std::endl;
+  std::cout << "[UserInterest] <<I: " << interest.getName () << std::endl;
 }
 
 void
@@ -110,7 +110,7 @@ Repo::PollData ()
   i.setInterestLifetime (ndn::time::milliseconds (2000));
   i.setMustBeFresh (true);
 
-  std::cout << "[PollData] send interest: " << i << std::endl;
+  std::cout << "[PollData] >>I: " << i << std::endl;
 
   m_face.expressInterest (i,
 			  ndn::bind (&Repo::HandleData, this, _1, _2),
