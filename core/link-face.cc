@@ -94,7 +94,7 @@ LinkFace::PostRx (const boost::system::error_code& error)
   if (error)
     {
       NDNEM_LOG_TRACE ("[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
-                       << ") error = " << error.message ());
+                       << ") RX timer cancelled");
       return;
     }
 
@@ -124,13 +124,6 @@ LinkFace::PostRx (const boost::system::error_code& error)
   m_state = IDLE;
   NDNEM_LOG_TRACE ("[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
                    << ") after state = " << PhyStateToString (m_state));
-
-  if (m_txQueue.size () != 0)
-    {
-      NDNEM_LOG_TRACE ("[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
-                       << ") send packets in tx queue");
-      this->StartCsma ();
-    }
 }
 
 void
@@ -140,11 +133,11 @@ LinkFace::StartTx (const boost::shared_ptr<Packet>& pkt)
 
   NDNEM_LOG_TRACE ("[LinkFace::StartTx] (" << m_nodeId << ":" << m_id
                    << ") device in " << PhyStateToString (m_state)
-                   << ". TX queue size = " << m_txQueue.size ());
+                   << ". Queue size = " << m_txQueue.size ());
 
-  if (m_state == IDLE)
+  if (m_state == IDLE && m_txQueue.size () == 1)
     {
-      // If the device is idle, start tx now
+      // If the device is idle and this is the first packet in queue, start tx
       this->StartCsma ();
     }
 }
@@ -169,10 +162,12 @@ LinkFace::DoCsma (int NB, int BE, const boost::system::error_code& error)
   if (error)
     {
       NDNEM_LOG_TRACE ("[LinkFace::DoCsma] (" << m_nodeId << ":" << m_id
-                       << ") error = " << error.message ());
+                       << ") csma timer cancelled");
+      m_txQueue.clear ();
       return;
     }
 
+  assert (m_txQueue.size () >= 1);
   NDNEM_LOG_TRACE ("[LinkFace::DoCsma] (" << m_nodeId << ":" << m_id
                    << ") prior state = " << PhyStateToString (m_state));
 
@@ -181,7 +176,7 @@ LinkFace::DoCsma (int NB, int BE, const boost::system::error_code& error)
     case IDLE:
       {
         NDNEM_LOG_TRACE ("[LinkFace::DoCsma] (" << m_nodeId << ":" << m_id
-                         << ") channel clear after " << NB << " backoffs. Start tx");
+                         << ") channel clear after " << NB << " backoffs. Start Tx");
         m_state = TX;
 
         // Send the message to the link asynchronously
@@ -208,6 +203,16 @@ LinkFace::DoCsma (int NB, int BE, const boost::system::error_code& error)
           {
             NDNEM_LOG_TRACE ("[LinkFace::DoCsma] (" << m_nodeId << ":" << m_id
                              << ") reach max backoff. Give up Tx");
+            m_txQueue.pop_front ();
+            m_state = IDLE;
+
+            // Should we clear the entire queue?
+            if (m_txQueue.size () != 0)
+              {
+                // Schedule tx of the next packet in queue
+                this->StartCsma ();
+              }
+
             return;
           }
         BE = BE + 1;
@@ -225,7 +230,7 @@ LinkFace::DoCsma (int NB, int BE, const boost::system::error_code& error)
       m_txQueue.pop_front ();
 
       NDNEM_LOG_TRACE ("[LinkFace::DoCsma] (" << m_nodeId << ":" << m_id
-                       << ") TX finish. Queue size = " << m_txQueue.size ());
+                       << ") Tx finish. Queue size = " << m_txQueue.size ());
       m_state = IDLE;
 
       if (m_txQueue.size () != 0)
