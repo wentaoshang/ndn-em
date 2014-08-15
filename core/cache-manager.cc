@@ -15,9 +15,10 @@ CacheManager::FindMatchingData (const boost::shared_ptr<ndn::Interest>& i,
   cache_type::iterator it;
   for (it = m_queue.begin (); it != m_queue.end (); it++)
     {
-      // For now, ignore selectors and always return fresh data only
+      bool mustBeFresh = i->getMustBeFresh ();
+      // For now, ignore other selectors
       if (i->getName ().isPrefixOf (it->data->getName ())
-	  && it->expire > now)
+	  && (!mustBeFresh || (mustBeFresh && it->expire > now)))
 	{
 	  // Return the first match
 	  out = it->data;
@@ -44,6 +45,7 @@ CacheManager::Insert (const boost::shared_ptr<ndn::Data>& d)
       return;
     }
 
+  // Cache replacement policy (FIFO)
   while (m_count + sz > m_limit)
     {
       size_t front_sz = m_queue.front ().size;

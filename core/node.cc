@@ -42,7 +42,9 @@ Node::Start ()
   // Setup cache manager
   m_cacheManager = boost::make_shared<node::CacheManager>
     (m_id, 1000, 10000, boost::ref (m_ioService));
-  m_cacheManager->ScheduleCleanUp ();
+
+  // Let stale data stay in cache until cache replacement policy clears them out
+  //m_cacheManager->ScheduleCleanUp ();
 
   // Wait for connection from clients
   int faceId = m_faceCounter++;
