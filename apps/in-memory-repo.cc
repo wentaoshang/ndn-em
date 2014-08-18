@@ -120,7 +120,32 @@ Repo::HandleNotifyInterest (const Name& name, const Interest& interest)
 void
 Repo::HandleUserInterest (const Name& name, const Interest& interest)
 {
-  std::cout << "[UserInterest] <<I: " << interest.getName () << std::endl;
+  const Name& iName = interest.getName ();
+  std::cout << "[UserInterest] <<I: " << iName << std::endl;
+
+  shared_ptr<Data> d;
+  if (iName.size () == 4)
+    {
+      const name::Component& seq = iName.get (3);
+      int seqNum = boost::lexical_cast<int> (seq.toUri ());
+      std::cout << "[UserInterest] seq: " << seqNum << std::endl;
+
+      std::map<int, shared_ptr<Data> >::iterator it = m_store.find (seqNum);
+      if (it != m_store.end ())
+        {
+          d = it->second;
+        }
+      else
+        std::cout << "[UserInterest] requested data not in store" << std::endl;
+    }
+  else
+    {
+      // Just return the last data in store
+      d = m_store.rbegin ()->second;
+    }
+
+  std::cout << "[UserInterest] >>D: " << d->getName () << std::endl;
+  m_face.put (*d);
 }
 
 void

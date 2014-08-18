@@ -102,7 +102,17 @@
 	</Connection>
 	<Connection>
 	  <From>n1</From>
+	  <To>n0</To>
+	  <LossRate>0.0</LossRate>
+	</Connection>
+	<Connection>
+	  <From>n1</From>
 	  <To>n2</To>
+	  <LossRate>0.0</LossRate>
+	</Connection>
+	<Connection>
+	  <From>n2</From>
+	  <To>n1</To>
 	  <LossRate>0.0</LossRate>
 	</Connection>
 	<Connection>
@@ -123,16 +133,6 @@
 	<Connection>
 	  <From>n3</From>
 	  <To>n0</To>
-	  <LossRate>0.0</LossRate>
-	</Connection>
-	<Connection>
-	  <From>n1</From>
-	  <To>n2</To>
-	  <LossRate>0.0</LossRate>
-	</Connection>
-	<Connection>
-	  <From>n2</From>
-	  <To>n1</To>
 	  <LossRate>0.0</LossRate>
 	</Connection>
 	<Connection>

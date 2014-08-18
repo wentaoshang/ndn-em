@@ -6,8 +6,9 @@
 
 class SimpleConsumer {
 public:
-  SimpleConsumer (long delay, const std::string& path)
-    : m_delay (ndn::time::milliseconds (delay))
+  SimpleConsumer (long delay, const std::string& name, const std::string& path)
+    : m_delay (delay)
+    , m_name (name)
     , m_path (path)
     , m_transport (ndn::make_shared<ndn::UnixTransport> (path))
     , m_face (m_transport, m_ioService)
@@ -42,7 +43,7 @@ private:
   {
     std::cout << "Interest scheduled by the cxx scheduler" << std::endl;
 
-    ndn::Interest i (ndn::Name ("/test/app/data"));
+    ndn::Interest i (m_name);
     i.setScope (1);
     i.setInterestLifetime (ndn::time::milliseconds (1000));
     i.setMustBeFresh (true);
@@ -51,13 +52,15 @@ private:
                             ndn::bind (&SimpleConsumer::HandleData, this, _1, _2),
                             ndn::bind (&SimpleConsumer::HandleTimeout, this, _1));
 
-    // Schedule a new event
-    m_scheduler.scheduleEvent (m_delay,
-                               ndn::bind (&SimpleConsumer::SendInterest, this));
+    if (m_delay != -1)
+      // Schedule a new event
+      m_scheduler.scheduleEvent (ndn::time::milliseconds (m_delay),
+                                 ndn::bind (&SimpleConsumer::SendInterest, this));
   }
 
 private:
-  ndn::time::system_clock::Duration m_delay;
+  long m_delay;
+  const ndn::Name m_name;
   const std::string m_path;
   ndn::shared_ptr<ndn::UnixTransport> m_transport;
   boost::asio::io_service m_ioService;
