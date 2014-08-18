@@ -46,8 +46,12 @@ LinkFace::StartRx (const boost::shared_ptr<Packet>& pkt)
         m_pendingRx = pkt;
         std::size_t pkt_len = pkt->GetLength ();
         long delay = static_cast<long>
-          ((static_cast<double> (pkt_len) * 8.0 * 1000.0 / (Link::TX_RATE * 1024.0)));
-        m_rxTimer.expires_from_now (boost::posix_time::milliseconds (delay));
+          ((static_cast<double> (pkt_len) * 8.0 * 1E6 / (Link::TX_RATE * 1024.0)));
+
+        NDNEM_LOG_TRACE ("[LinkFace::StartCsma] (" << m_nodeId << ":" << m_id
+                         << ") set csma timer in " << delay << " us");
+
+        m_rxTimer.expires_from_now (boost::posix_time::microseconds (delay));
         m_rxTimer.async_wait
           (boost::bind (&LinkFace::PostRx, this, _1));
       }
@@ -62,11 +66,13 @@ LinkFace::StartRx (const boost::shared_ptr<Packet>& pkt)
         m_pendingRx = pkt;
         std::size_t pkt_len = pkt->GetLength ();
         long delay = static_cast<long>
-          ((static_cast<double> (pkt_len) * 8.0 * 1000.0 / (Link::TX_RATE * 1024.0)));
+          ((static_cast<double> (pkt_len) * 8.0 * 1E6 / (Link::TX_RATE * 1024.0)));
+
+        NDNEM_LOG_TRACE ("[LinkFace::StartCsma] (" << m_nodeId << ":" << m_id
+                         << ") set csma timer in " << delay << " us");
 
         // Cancel previous timer and set new timer based on the new packet size
-        m_rxTimer.cancel ();
-        m_rxTimer.expires_from_now (boost::posix_time::milliseconds (delay));
+        m_rxTimer.expires_from_now (boost::posix_time::microseconds (delay));
         m_rxTimer.async_wait
           (boost::bind (&LinkFace::PostRx, this, _1));
       }
@@ -110,13 +116,26 @@ LinkFace::PostRx (const boost::system::error_code& error)
       }
       break;
     case RX_COLLIDE:
-      NDNEM_LOG_TRACE ("[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
-                       << ") RX failed due to packet collision");
+      NDNEM_LOG_INFO ("[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
+                      << ") RX failed due to packet collision");
+      break;
+    case IDLE:
+      // There are some cases where the callback is still raised when
+      // it should have been cancelled. This may happen when the delay
+      // in emulator processing is large enough and therefore the timer
+      // has already expired before we have a chance to cancel it.
+      // In that case, the state may have been already set to IDLE by the
+      // previous execution of PostRx (which should have been cancelled).
+      // In order not to crash the emulator, we have to allow for this case
+      // as a special hack to get around the problem.
+      NDNEM_LOG_INFO ("[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
+                      << ") called when the state is IDLE");
       break;
     default:
       NDNEM_LOG_ERROR ("[LinkFace::PostRx] (" << m_nodeId << ":" << m_id
                        << ") illegal state: " << PhyStateToString (m_state));
-      throw std::runtime_error ("[LinkFace::PostRx] illegal state: " + PhyStateToString (m_state));
+      throw std::runtime_error ("[LinkFace::PostRx] illegal state: "
+                                + PhyStateToString (m_state));
       break;
     }
 
@@ -135,11 +154,7 @@ LinkFace::StartTx (const boost::shared_ptr<Packet>& pkt)
                    << ") device in " << PhyStateToString (m_state)
                    << ". Queue size = " << m_txQueue.size ());
 
-  if (m_state == IDLE && m_txQueue.size () == 1)
-    {
-      // If the device is idle and this is the first packet in queue, start tx
-      this->StartCsma ();
-    }
+  this->StartCsma ();
 }
 
 void
@@ -151,6 +166,10 @@ LinkFace::StartCsma ()
   int NB = 0, BE = LinkFace::MIN_BE;
   boost::random::uniform_int_distribution<> rand (0, (1 << BE) - 1);
   long backoff = rand (m_engine) * LinkFace::BACKOFF_PERIOD;
+
+  NDNEM_LOG_TRACE ("[LinkFace::StartCsma] (" << m_nodeId << ":" << m_id
+                   << ") set csma timer in " << backoff << " us");
+
   m_csmaTimer.expires_from_now (boost::posix_time::microseconds (backoff));
   m_csmaTimer.async_wait
     (boost::bind (&LinkFace::DoCsma, this, NB, BE, _1));
@@ -163,7 +182,7 @@ LinkFace::DoCsma (int NB, int BE, const boost::system::error_code& error)
     {
       NDNEM_LOG_TRACE ("[LinkFace::DoCsma] (" << m_nodeId << ":" << m_id
                        << ") csma timer cancelled");
-      m_txQueue.clear ();
+      //m_txQueue.clear ();
       return;
     }
 
@@ -186,8 +205,12 @@ LinkFace::DoCsma (int NB, int BE, const boost::system::error_code& error)
         // Set timer to clear TX state later
         std::size_t pkt_len = pkt->GetLength ();
         long delay = static_cast<long>
-          ((static_cast<double> (pkt_len) * 8.0 * 1000.0 / (Link::TX_RATE * 1024.0)));
-        m_csmaTimer.expires_from_now (boost::posix_time::milliseconds (delay));
+          ((static_cast<double> (pkt_len) * 8.0 * 1E6 / (Link::TX_RATE * 1024.0)));
+
+        NDNEM_LOG_TRACE ("[LinkFace::StartCsma] (" << m_nodeId << ":" << m_id
+                         << ") set csma timer in " << delay << " us");
+
+        m_csmaTimer.expires_from_now (boost::posix_time::microseconds (delay));
         m_csmaTimer.async_wait
           (boost::bind (&LinkFace::DoCsma, this, -1, -1, _1));
       }
@@ -204,7 +227,8 @@ LinkFace::DoCsma (int NB, int BE, const boost::system::error_code& error)
             NDNEM_LOG_TRACE ("[LinkFace::DoCsma] (" << m_nodeId << ":" << m_id
                              << ") reach max backoff. Give up Tx");
             m_txQueue.pop_front ();
-            m_state = IDLE;
+
+            // Leave m_state as it is. RX path will reset it back to IDLE
 
             // Should we clear the entire queue?
             if (m_txQueue.size () != 0)
@@ -220,6 +244,10 @@ LinkFace::DoCsma (int NB, int BE, const boost::system::error_code& error)
           BE = LinkFace::MAX_BE;
         boost::random::uniform_int_distribution<> rand (0, (1 << BE) - 1);
         long backoff = rand (m_engine) * LinkFace::BACKOFF_PERIOD;
+
+        NDNEM_LOG_TRACE ("[LinkFace::StartCsma] (" << m_nodeId << ":" << m_id
+                         << ") set csma timer in " << backoff << " us");
+
         m_csmaTimer.expires_from_now (boost::posix_time::microseconds (backoff));
         m_csmaTimer.async_wait
           (boost::bind (&LinkFace::DoCsma, this, NB, BE, _1));

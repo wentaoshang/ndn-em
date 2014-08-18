@@ -5,7 +5,7 @@
 
 namespace emulator {
 
-const double Link::TX_RATE = 250.0;  // 250 kbit/s
+const double Link::TX_RATE = 40.0;  // kbit/s
 
 void
 Link::AddNode (boost::shared_ptr<LinkFace>& node)
