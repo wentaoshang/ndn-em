@@ -21,6 +21,7 @@ LinkFace::LinkFace (const int faceId, const std::string& nodeId,
   , m_rxTimer (ioService)
   , m_csmaTimer (ioService)
   , m_state (IDLE) // PhyState.IDLE
+  , m_txQueueLimit (5)
 {
   NDNEM_LOG_TRACE ("[LinkFace::LinkFace] (" << m_nodeId
                    << ":" << m_id << ") on link " << m_link->GetId ());
@@ -148,13 +149,20 @@ LinkFace::PostRx (const boost::system::error_code& error)
 void
 LinkFace::StartTx (const boost::shared_ptr<Packet>& pkt)
 {
-  m_txQueue.push_back (pkt);
-
   NDNEM_LOG_TRACE ("[LinkFace::StartTx] (" << m_nodeId << ":" << m_id
                    << ") device in " << PhyStateToString (m_state)
                    << ". Queue size = " << m_txQueue.size ());
 
-  this->StartCsma ();
+  if (m_txQueue.size () < m_txQueueLimit)
+    {
+      NDNEM_LOG_TRACE ("[LinkFace::StartTx] (" << m_nodeId << ":" << m_id
+                       << ") enqueue the packet and start csma ");
+      m_txQueue.push_back (pkt);
+      this->StartCsma ();
+    }
+  else
+    NDNEM_LOG_INFO ("[LinkFace::StartTx] (" << m_nodeId << ":" << m_id
+                    << ") reached max queue size. Drop tail");
 }
 
 void

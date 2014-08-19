@@ -124,7 +124,7 @@ void
 Node::HandleFaceMessage (const int faceId, const ndn::Block& element)
 {
   NDNEM_LOG_TRACE ("[Node::HandleFaceMessage] (" << m_id << ":" << faceId
-                   << ") element type = " << element.type ());
+                   << ") packet type = " << element.type ());
   try
     {
       if (element.type () == ndn::Tlv::Interest)
@@ -158,7 +158,7 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
   if (m_cacheManager.FindMatchingData (i, d))
     {
       NDNEM_LOG_TRACE ("[Node::HandleInterest] (" << m_id << ":" << faceId
-                       << ") Match found in cache");
+                       << ") found match in cache");
       const boost::shared_ptr<Packet> pkt (boost::make_shared<DataPacket> (d));
       this->ForwardToFace (pkt, faceId);
       return;
@@ -174,7 +174,7 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
       if (outList.empty ())
         {
           NDNEM_LOG_TRACE ("[Node::HandleInterest] (" << m_id << ":" << faceId
-                           << ") no route to name " << i->getName ());
+                           << ") no route to " << i->getName ());
           return;
         }
 
@@ -194,7 +194,7 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
   else
     {
       NDNEM_LOG_DEBUG ("[Node::HandleInterest] (" << m_id << ":" << faceId
-                      << ") Looping Interest with nonce " << i->getNonce () << " detected.");
+                      << ") Looping Interest with nonce " << i->getNonce ());
     }
 
   //m_pit.Print ();
@@ -222,7 +222,7 @@ Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d)
 void
 Node::RemoveFace (const int faceId)
 {
-  NDNEM_LOG_DEBUG ("[Node::RemoveFace] (" << m_id << ":" << faceId << ")");
+  NDNEM_LOG_TRACE ("[Node::RemoveFace] (" << m_id << ":" << faceId << ")");
   m_faceTable.erase (faceId);
   m_fibManager->CleanUpFib (faceId);
 }

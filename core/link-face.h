@@ -99,6 +99,7 @@ private:
   PhyState m_state;
   boost::shared_ptr<Packet> m_pendingRx;
   std::deque<boost::shared_ptr<Packet> > m_txQueue;  // FIFO queue
+  const std::size_t m_txQueueLimit;
   boost::random::mt19937 m_engine;
 };
 
