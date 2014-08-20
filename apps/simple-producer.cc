@@ -10,8 +10,9 @@ using namespace ndn;
 class SimpleProducer
 {
 public:
-  SimpleProducer (const std::string& path)
-    : m_path (path)
+  SimpleProducer (const std::string& name, const std::string& path)
+    : m_name (name)
+    , m_path (path)
     , m_transport (ndn::make_shared<ndn::UnixTransport> (path))
     , m_face (m_transport, m_ioService)
   {
@@ -20,7 +21,7 @@ public:
   void
   onInterest (const Name& name, const Interest& interest)
   {
-    std::cout << "<< I: " << interest << std::endl;
+    std::cout << "<< I: " << interest.getName () << std::endl;
 
     // Create new name, based on Interest's name
     Name dataName (interest.getName ());
@@ -38,7 +39,7 @@ public:
     m_keyChain.sign (*data);
 
     // Return Data packet to the requester
-    std::cout << ">> D: " << *data;
+    std::cout << ">> D: " << data->getName () << std::endl;;
     m_face.put (*data);
   }
 
@@ -53,7 +54,8 @@ public:
   void
   Run ()
   {
-    m_face.setInterestFilter ("/test/app/data",
+    std::cout << "[Run] start simple producer" << std::endl;
+    m_face.setInterestFilter (m_name,
 			      bind (&SimpleProducer::onInterest, this, _1, _2),
 			      RegisterPrefixSuccessCallback (),
 			      bind (&SimpleProducer::onRegisterFailed, this, _2));
@@ -62,6 +64,7 @@ public:
 
 private:
   const std::string m_path;
+  const std::string m_name;
   shared_ptr<ndn::UnixTransport> m_transport;
   boost::asio::io_service m_ioService;
   Face m_face;
@@ -71,9 +74,15 @@ private:
 int
 main(int argc, char* argv[])
 {
+  if (argc != 3)
+    {
+      std::cerr << "Usage: " << argv[0] << " [ndn_name] [unix_path]" << std::endl;
+      exit (1);
+    }
+
   try
     {
-      SimpleProducer producer (argv[1]);
+      SimpleProducer producer (argv[1], argv[2]);
       producer.Run ();
     }
   catch (std::exception& e)

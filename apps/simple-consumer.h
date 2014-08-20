@@ -28,8 +28,7 @@ private:
   void
   HandleData (const ndn::Interest& interest, ndn::Data& data)
   {
-    std::cout << "I: " << interest.toUri () << std::endl;
-    std::cout << "D: " << data.getName ().toUri () << std::endl;
+    std::cout << "<< D: " << data.getName () << std::endl;
   }
 
   void
@@ -41,16 +40,15 @@ private:
   void
   SendInterest ()
   {
-    std::cout << "Interest scheduled by the cxx scheduler" << std::endl;
-
     ndn::Interest i (m_name);
-    i.setScope (1);
     i.setInterestLifetime (ndn::time::milliseconds (1000));
     i.setMustBeFresh (true);
 
     m_face.expressInterest (i,
                             ndn::bind (&SimpleConsumer::HandleData, this, _1, _2),
                             ndn::bind (&SimpleConsumer::HandleTimeout, this, _1));
+
+    std::cout << ">> I: " << i.getName () << std::endl;
 
     if (m_delay != -1)
       // Schedule a new event

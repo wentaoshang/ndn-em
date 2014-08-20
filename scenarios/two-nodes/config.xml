@@ -7,8 +7,8 @@
 
   <Nodes>
     <Node>
-      <Id>n0</Id>
-      <Path>/tmp/node0</Path>
+      <Id>consumer</Id>
+      <Path>/tmp/consumer</Path>
       <Links>
 	<LinkId>l0</LinkId>
       </Links>
@@ -20,17 +20,11 @@
       </Routes>
     </Node>
     <Node>
-      <Id>n1</Id>
-      <Path>/tmp/node1</Path>
+      <Id>producer</Id>
+      <Path>/tmp/producer</Path>
       <Links>
 	<LinkId>l0</LinkId>
       </Links>
-      <Routes>
-	<Route>
-	  <Prefix>/</Prefix>
-	  <OutFace>l0</OutFace>
-	</Route>
-      </Routes>
     </Node>
   </Nodes>
 
@@ -39,14 +33,14 @@
       <LinkId>l0</LinkId>
       <Connections>
 	<Connection>
-	  <From>n0</From>
-	  <To>n1</To>
-	  <LossRate>0.0</LossRate>
+	  <From>consumer</From>
+	  <To>producer</To>
+	  <LossRate>0.5</LossRate>
 	</Connection>
 	<Connection>
-	  <From>n1</From>
-	  <To>n0</To>
-	  <LossRate>0.0</LossRate>
+	  <From>producer</From>
+	  <To>consumer</To>
+	  <LossRate>0.5</LossRate>
 	</Connection>
       </Connections>
     </Matrix>

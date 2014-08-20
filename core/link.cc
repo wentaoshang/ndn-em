@@ -28,6 +28,9 @@ Link::Transmit (const std::string& nodeId, const boost::shared_ptr<Packet>& pkt)
         {
           m_nodeTable[it->first]->HandleLinkMessage (pkt);
         }
+      else
+        NDNEM_LOG_DEBUG ("[Link::Transmit] (" << m_id << ") " << nodeId << " -> " << it->first
+                         << ": drop packet");
     }
 }
 

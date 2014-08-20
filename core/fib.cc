@@ -33,7 +33,7 @@ Fib::LookUp (const ndn::Name& name, std::set<int>& out)
 	    {
 	      ss << " " << *fit;
 	    }
-          NDNEM_LOG_DEBUG (ss.str ());
+          NDNEM_LOG_TRACE (ss.str ());
 	  out.insert (faces.begin (), faces.end ());
 	}
     }

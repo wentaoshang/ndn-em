@@ -53,9 +53,8 @@ FibManager::AddNextHop(ControlParameters& parameters,
   uint64_t faceId = parameters.getFaceId ();
   uint64_t cost = parameters.getCost(); // ignore cost for now
 
-  NDNEM_LOG_DEBUG ("[FibManager::AddNextHop] prefix = " << prefix
-                   << ", faceid = " << faceId
-                   << ", cost = " << cost);
+  NDNEM_LOG_INFO ("[FibManager::AddNextHop] prefix = " << prefix
+                  << ", faceid = " << faceId);
 
   //TODO: validate face id
 
