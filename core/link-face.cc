@@ -1,5 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
 
+#include <boost/random/random_device.hpp>
 #include "link-face.h"
 #include "link.h"
 
@@ -23,6 +24,8 @@ LinkFace::LinkFace (const int faceId, const std::string& nodeId,
   , m_state (IDLE) // PhyState.IDLE
   , m_txQueueLimit (5)
 {
+  boost::random::random_device rng;
+  m_engine.seed (rng ());
   NDNEM_LOG_TRACE ("[LinkFace::LinkFace] (" << m_nodeId
                    << ":" << m_id << ") on link " << m_link->GetId ());
 }
@@ -49,8 +52,8 @@ LinkFace::StartRx (const boost::shared_ptr<Packet>& pkt)
         long delay = static_cast<long>
           ((static_cast<double> (pkt_len) * 8.0 * 1E6 / (Link::TX_RATE * 1024.0)));
 
-        NDNEM_LOG_TRACE ("[LinkFace::StartCsma] (" << m_nodeId << ":" << m_id
-                         << ") set csma timer in " << delay << " us");
+        NDNEM_LOG_TRACE ("[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
+                         << ") set rx timer in " << delay << " us");
 
         m_rxTimer.expires_from_now (boost::posix_time::microseconds (delay));
         m_rxTimer.async_wait
@@ -69,8 +72,8 @@ LinkFace::StartRx (const boost::shared_ptr<Packet>& pkt)
         long delay = static_cast<long>
           ((static_cast<double> (pkt_len) * 8.0 * 1E6 / (Link::TX_RATE * 1024.0)));
 
-        NDNEM_LOG_TRACE ("[LinkFace::StartCsma] (" << m_nodeId << ":" << m_id
-                         << ") set csma timer in " << delay << " us");
+        NDNEM_LOG_TRACE ("[LinkFace::StartRx] (" << m_nodeId << ":" << m_id
+                         << ") set rx timer in " << delay << " us");
 
         // Cancel previous timer and set new timer based on the new packet size
         m_rxTimer.expires_from_now (boost::posix_time::microseconds (delay));
@@ -176,7 +179,7 @@ LinkFace::StartCsma ()
   long backoff = rand (m_engine) * LinkFace::BACKOFF_PERIOD;
 
   NDNEM_LOG_TRACE ("[LinkFace::StartCsma] (" << m_nodeId << ":" << m_id
-                   << ") set csma timer in " << backoff << " us");
+                   << ") set csma timer in " << backoff << " us for CCA");
 
   m_csmaTimer.expires_from_now (boost::posix_time::microseconds (backoff));
   m_csmaTimer.async_wait
@@ -215,8 +218,8 @@ LinkFace::DoCsma (int NB, int BE, const boost::system::error_code& error)
         long delay = static_cast<long>
           ((static_cast<double> (pkt_len) * 8.0 * 1E6 / (Link::TX_RATE * 1024.0)));
 
-        NDNEM_LOG_TRACE ("[LinkFace::StartCsma] (" << m_nodeId << ":" << m_id
-                         << ") set csma timer in " << delay << " us");
+        NDNEM_LOG_TRACE ("[LinkFace::DoCsma] (" << m_nodeId << ":" << m_id
+                         << ") set csma timer in " << delay << " us for TX");
 
         m_csmaTimer.expires_from_now (boost::posix_time::microseconds (delay));
         m_csmaTimer.async_wait
@@ -253,8 +256,8 @@ LinkFace::DoCsma (int NB, int BE, const boost::system::error_code& error)
         boost::random::uniform_int_distribution<> rand (0, (1 << BE) - 1);
         long backoff = rand (m_engine) * LinkFace::BACKOFF_PERIOD;
 
-        NDNEM_LOG_TRACE ("[LinkFace::StartCsma] (" << m_nodeId << ":" << m_id
-                         << ") set csma timer in " << backoff << " us");
+        NDNEM_LOG_TRACE ("[LinkFace::DoCsma] (" << m_nodeId << ":" << m_id
+                         << ") set csma timer in " << backoff << " us for backoff");
 
         m_csmaTimer.expires_from_now (boost::posix_time::microseconds (backoff));
         m_csmaTimer.async_wait

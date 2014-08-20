@@ -15,7 +15,7 @@ enum {
   FATAL = 5
 };
 
-#define LOG_LEVEL DEBUG
+#define LOG_LEVEL TRACE
 
 #define NDNEM_LOG_TRACE(stream)                                         \
 if (LOG_LEVEL <= TRACE) {                                               \
