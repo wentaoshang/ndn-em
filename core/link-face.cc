@@ -13,11 +13,13 @@ const int LinkFace::MAX_BE = 5;
 const int LinkFace::MAX_CSMA_BACKOFFS = 4;
 
 LinkFace::LinkFace (const int faceId, const std::string& nodeId,
+                    const uint64_t macAddr,
                     boost::asio::io_service& ioService,
                     const boost::function<void (const int, const ndn::Block&)>&
                     nodeMessageCallback,
                     boost::shared_ptr<Link> link)
   : Face (faceId, nodeId, ioService, nodeMessageCallback)
+  , m_macAddr (macAddr)
   , m_link (link)
   , m_rxTimer (ioService)
   , m_csmaTimer (ioService)
@@ -115,8 +117,10 @@ LinkFace::PostRx (const boost::system::error_code& error)
     case RX:
       {
         const ndn::Block& wire = m_pendingRx->GetBlock ();
-        // Post the message asynchronously
-        m_ioService.post (boost::bind (m_nodeMessageCallback, m_id, wire));
+        const uint64_t dst = m_pendingRx->GetDstMac ();
+        if (dst == m_macAddr || dst == 0xffff)  //XXX: assume 0xffff is broadcast addr
+          // Post the message asynchronously
+          m_ioService.post (boost::bind (m_nodeMessageCallback, m_id, wire));
       }
       break;
     case RX_COLLIDE:

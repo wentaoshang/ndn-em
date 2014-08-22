@@ -85,7 +85,7 @@ Node::AddLink (const boost::shared_ptr<Link>& link, boost::shared_ptr<LinkFace>&
 
   int faceId = m_faceCounter++;
   boost::shared_ptr<LinkFace> face =
-    boost::make_shared<LinkFace> (faceId, m_id, boost::ref (m_ioService),
+    boost::make_shared<LinkFace> (faceId, m_id, m_macAddr, boost::ref (m_ioService),
                                   boost::bind (&Node::HandleFaceMessage, this, _1, _2),
                                   link);
 
@@ -159,7 +159,8 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
     {
       NDNEM_LOG_TRACE ("[Node::HandleInterest] (" << m_id << ":" << faceId
                        << ") found match in cache");
-      const boost::shared_ptr<Packet> pkt (boost::make_shared<DataPacket> (d));
+      const boost::shared_ptr<Packet> pkt
+        (boost::make_shared<DataPacket> (0xffff, m_macAddr, d));
       this->ForwardToFace (pkt, faceId);
       return;
     }
@@ -187,7 +188,8 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
       else
         {
           // Forward to faces
-          boost::shared_ptr<Packet> pkt (boost::make_shared<InterestPacket> (i));
+          boost::shared_ptr<Packet> pkt
+            (boost::make_shared<InterestPacket> (0xffff, m_macAddr, i));
           this->ForwardToFaces (pkt, outList);
         }
     }
@@ -212,7 +214,8 @@ Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d)
       // Cache the data only when we have pending interest for it
       m_cacheManager.Insert (d);
 
-      boost::shared_ptr<Packet> pkt (boost::make_shared<DataPacket> (d));
+      boost::shared_ptr<Packet> pkt
+        (boost::make_shared<DataPacket> (0xffff, m_macAddr, d));
       this->ForwardToFaces (pkt, outList);
     }
   else

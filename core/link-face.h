@@ -18,6 +18,7 @@ class Link;
 class LinkFace : public Face {
 public:
   LinkFace (const int faceId, const std::string& nodeId,
+            const uint64_t macAddr,
             boost::asio::io_service& ioService,
             const boost::function<void (const int, const ndn::Block&)>&
             nodeMessageCallback,
@@ -93,6 +94,7 @@ private:
   DoCsma (int, int, const boost::system::error_code&);
 
 private:
+  const uint64_t m_macAddr;
   boost::shared_ptr<Link> m_link;
   boost::asio::deadline_timer m_rxTimer;  // emulating transmission delay
   boost::asio::deadline_timer m_csmaTimer; // implementing CSMA algorithm
