@@ -231,6 +231,7 @@ void
 Node::PrintInfo ()
 {
   std::cout << "Node id: " << m_id << std::endl;
+  std::cout << "  MAC address: 0x" << std::hex << m_macAddr << std::dec << std::endl;
   std::cout << "  Unix socket path: " << m_socketPath << std::endl;
   std::cout << "  Cache limit: " << (m_cacheManager.GetLimit () >> 10) << " KB" << std::endl;
   std::map<std::string, int>::iterator it;

@@ -25,9 +25,10 @@ namespace emulator {
 
 class Node : boost::noncopyable {
 public:
-  Node (const std::string& id, const std::string& socketPath,
+  Node (const std::string& id, uint64_t macAddr, const std::string& socketPath,
         int cacheLimit, boost::asio::io_service& ioService)
     : m_id (id)
+    , m_macAddr (macAddr)
     , m_socketPath (socketPath)
     , m_endpoint (m_socketPath)
     , m_ioService (ioService)
@@ -108,6 +109,7 @@ private:
 
 private:
   std::string m_id; // node id
+  uint64_t m_macAddr; // mac address
   std::string m_socketPath; // unix domain socket path
   boost::asio::local::stream_protocol::endpoint m_endpoint; // local listening endpoint
   boost::asio::io_service& m_ioService;

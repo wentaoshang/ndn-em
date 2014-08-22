@@ -40,6 +40,9 @@ Emulator::ReadNetworkConfig (const char* path)
       BOOST_ASSERT (v.first == "Node");
       ptree& node = v.second;
       const std::string nodeId = node.get<std::string> ("Id");
+      boost::optional<uint64_t> macAddr = node.get_optional<uint64_t> ("MacAddress");
+      if (!macAddr)
+        macAddr = boost::optional<uint64_t> (0xFFFF);  // default mac address for lr-wpan devices
       const std::string path = node.get<std::string> ("Path");
       boost::optional<int> cacheLimit = node.get_optional<int> ("CacheLimit");
       if (!cacheLimit)
@@ -49,7 +52,8 @@ Emulator::ReadNetworkConfig (const char* path)
       if (it == m_nodeTable.end ())
         {
           boost::shared_ptr<Node> pnode
-            (boost::make_shared<Node> (nodeId, path, *cacheLimit, boost::ref (m_ioService)));
+            (boost::make_shared<Node> (nodeId, *macAddr, path, *cacheLimit,
+                                       boost::ref (m_ioService)));
 
           BOOST_FOREACH (ptree::value_type& v, node.get_child ("Links"))
             {
