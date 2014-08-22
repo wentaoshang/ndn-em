@@ -4,7 +4,6 @@
 #define __LINK_FACE_H__
 
 #include <boost/asio.hpp>
-#include <boost/function.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
 #include <deque>
@@ -17,11 +16,9 @@ class Link;
 
 class LinkFace : public Face {
 public:
-  LinkFace (const int faceId, const std::string& nodeId,
+  LinkFace (const int faceId, boost::shared_ptr<Node> node,
             const uint64_t macAddr,
             boost::asio::io_service& ioService,
-            const boost::function<void (const int, const ndn::Block&)>&
-            nodeMessageCallback,
             boost::shared_ptr<Link> link);
 
   const std::string&

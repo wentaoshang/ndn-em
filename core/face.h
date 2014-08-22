@@ -4,7 +4,6 @@
 #define __FACE_H__
 
 #include <boost/asio.hpp>
-#include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/utility.hpp>
 
@@ -15,17 +14,12 @@
 
 namespace emulator {
 
+class Node;
+
 class Face : boost::noncopyable {
 protected:
-  Face (const int faceId, const std::string& nodeId, boost::asio::io_service& ioService,
-        const boost::function<void (const int, const ndn::Block&)>& nodeMessageCallback)
-    : m_id (faceId)
-    , m_nodeId (nodeId)
-    , m_ioService (ioService)
-    , m_nodeMessageCallback (nodeMessageCallback)
-  {
-    NDNEM_LOG_TRACE ("[Face::Face] (" << m_nodeId << ":" << m_id << ")");
-  }
+  Face (const int faceId, boost::shared_ptr<Node>& node,
+        boost::asio::io_service& ioService);
 
   virtual
   ~Face ()
@@ -49,11 +43,14 @@ public:
   virtual void
   Send (const boost::shared_ptr<Packet>&) = 0;
 
+  void
+  Dispatch (const ndn::Block&);
+
 protected:
   const int m_id;  // face id
-  const std::string& m_nodeId;  // node id
+  const std::string& m_nodeId; // node id
+  boost::shared_ptr<Node> m_node;
   boost::asio::io_service& m_ioService;
-  const boost::function<void (const int, const ndn::Block&)> m_nodeMessageCallback;
 };
 
 } // namespace emulator

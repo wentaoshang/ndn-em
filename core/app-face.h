@@ -7,7 +7,6 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/utility.hpp>
@@ -16,11 +15,9 @@ namespace emulator {
 
 class AppFace : public Face {
 public:
-  AppFace (const int faceId, const std::string& nodeId, boost::asio::io_service& ioService,
-           const boost::function<void (const int, const ndn::Block&)>& nodeMessageCallback,
-           const boost::function<void (const int)>& closeFaceCallback)
-    : Face (faceId, nodeId, ioService, nodeMessageCallback)
-    , m_closeFaceCallback (closeFaceCallback)
+  AppFace (const int faceId, boost::shared_ptr<Node> node,
+           boost::asio::io_service& ioService)
+    : Face (faceId, node, ioService)
     , m_socket (ioService)
     , m_inputBufferSize (0)
   {
@@ -73,7 +70,6 @@ private:
                  std::size_t nBytesReceived);
 
 private:
-  const boost::function<void (const int)> m_closeFaceCallback;
   boost::asio::local::stream_protocol::socket m_socket; // receive socket
   uint8_t m_inputBuffer[ndn::MAX_NDN_PACKET_SIZE]; // receive buffer
   std::size_t m_inputBufferSize;

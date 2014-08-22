@@ -5,7 +5,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include <boost/function.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/utility.hpp>
@@ -16,6 +16,7 @@
 #include "logging.h"
 #include "app-face.h"
 #include "link-face.h"
+#include "link.h"
 #include "pit.h"
 #include "fib.h"
 #include "fib-manager.h"
@@ -23,7 +24,7 @@
 
 namespace emulator {
 
-class Node : boost::noncopyable {
+class Node : public boost::enable_shared_from_this<Node>, boost::noncopyable {
 public:
   Node (const std::string& id, const uint64_t macAddr, const std::string& socketPath,
         int cacheLimit, boost::asio::io_service& ioService)
@@ -62,7 +63,16 @@ public:
   AddRoute (const std::string&, const std::string&);
 
   void
+  RemoveFace (const int);
+
+  void
   Start ();
+
+  void
+  HandleInterest (const int, const boost::shared_ptr<ndn::Interest>&);
+
+  void
+  HandleData (const int, const boost::shared_ptr<ndn::Data>&);
 
   void
   PrintInfo ();
@@ -71,9 +81,6 @@ private:
   void
   HandleAccept (const boost::shared_ptr<AppFace>&,
                 const boost::system::error_code&);
-
-  void
-  HandleFaceMessage (const int, const ndn::Block&);
 
   void
   ForwardToFace (const boost::shared_ptr<Packet>& pkt, int outId)
@@ -97,15 +104,6 @@ private:
         this->ForwardToFace (pkt, *it);
       }
   }
-
-  void
-  HandleInterest (const int, const boost::shared_ptr<ndn::Interest>&);
-
-  void
-  HandleData (const int, const boost::shared_ptr<ndn::Data>&);
-
-  void
-  RemoveFace (const int);
 
 private:
   const std::string m_id; // node id

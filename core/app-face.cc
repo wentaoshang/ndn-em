@@ -1,6 +1,7 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
 
 #include "app-face.h"
+#include "node.h"
 
 namespace emulator {
 
@@ -26,7 +27,7 @@ AppFace::HandleReceive (const boost::system::error_code& error,
 	  offset += element.size();
 
 	  // Pass message to the node
-	  m_nodeMessageCallback (m_id, element);
+	  this->Dispatch (element);
 	}
 
       if (!isOk && m_inputBufferSize == ndn::MAX_NDN_PACKET_SIZE && offset == 0)
@@ -57,7 +58,7 @@ AppFace::HandleReceive (const boost::system::error_code& error,
     {
       NDNEM_LOG_TRACE ("[AppFace::HandleReceive] (" << m_nodeId
                        << ":" << m_id << ") error = " << error.message ());
-      m_closeFaceCallback (m_id);
+      m_node->RemoveFace (m_id);
     }
 }
 

@@ -1,7 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
 
-#include "link-face.h"
-#include "link.h"
 #include "node.h"
 
 #include <ndn-cxx/interest.hpp>
@@ -45,10 +43,8 @@ Node::Start ()
   // Wait for connection from clients
   int faceId = m_faceCounter++;
   boost::shared_ptr<AppFace> client =
-    boost::make_shared<AppFace> (faceId, m_id,
-                                 boost::ref (m_ioService),
-                                 boost::bind (&Node::HandleFaceMessage, this, _1, _2),
-                                 boost::bind (&Node::RemoveFace, this, _1));
+    boost::make_shared<AppFace> (faceId, shared_from_this (),
+                                 boost::ref (m_ioService));
 
   m_acceptor.async_accept (client->GetSocket (),
 			   boost::bind (&Node::HandleAccept, this, client, _1));
@@ -61,10 +57,8 @@ Node::HandleAccept (const boost::shared_ptr<AppFace>& face,
   // Wait for the next client to connect
   int faceId = m_faceCounter++;
   boost::shared_ptr<AppFace> next =
-    boost::make_shared<AppFace> (faceId, m_id,
-                                 boost::ref (m_ioService),
-                                 boost::bind (&Node::HandleFaceMessage, this, _1, _2),
-                                 boost::bind (&Node::RemoveFace, this, _1));
+    boost::make_shared<AppFace> (faceId, shared_from_this (),
+                                 boost::ref (m_ioService));
 
   m_acceptor.async_accept (next->GetSocket (),
 			   boost::bind (&Node::HandleAccept, this, next, _1));
@@ -85,9 +79,8 @@ Node::AddLink (const boost::shared_ptr<Link>& link, boost::shared_ptr<LinkFace>&
 
   int faceId = m_faceCounter++;
   boost::shared_ptr<LinkFace> face =
-    boost::make_shared<LinkFace> (faceId, m_id, m_macAddr, boost::ref (m_ioService),
-                                  boost::bind (&Node::HandleFaceMessage, this, _1, _2),
-                                  link);
+    boost::make_shared<LinkFace> (faceId, shared_from_this (),
+                                  m_macAddr, boost::ref (m_ioService), link);
 
   // Add link face to face table
   m_faceTable[faceId] = face;
@@ -114,37 +107,6 @@ Node::AddRoute (const std::string& prefix, const std::string& linkId)
     {
       NDNEM_LOG_ERROR ("[Node::AddRoute] (" << m_id << ") link id " << linkId
                        << " doesn't exist in local link table");
-    }
-}
-
-/**
- * Handle message received from local face
- */
-void
-Node::HandleFaceMessage (const int faceId, const ndn::Block& element)
-{
-  NDNEM_LOG_TRACE ("[Node::HandleFaceMessage] (" << m_id << ":" << faceId
-                   << ") packet type = " << element.type ());
-  try
-    {
-      if (element.type () == ndn::Tlv::Interest)
-        {
-          boost::shared_ptr<ndn::Interest> i (boost::make_shared<ndn::Interest> ());
-          i->wireDecode (element);
-          this->HandleInterest (faceId, i);
-        }
-      else if (element.type () == ndn::Tlv::Data)
-        {
-          boost::shared_ptr<ndn::Data> d (boost::make_shared<ndn::Data> ());
-          d->wireDecode (element);
-          this->HandleData (faceId, d);
-        }
-      else
-        throw std::runtime_error ("Unknown NDN packet type");
-    }
-  catch (ndn::Tlv::Error&)
-    {
-      throw std::runtime_error ("NDN packet decoding error");
     }
 }
 

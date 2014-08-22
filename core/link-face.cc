@@ -2,6 +2,7 @@
 
 #include <boost/random/random_device.hpp>
 #include "link-face.h"
+#include "node.h"
 #include "link.h"
 
 namespace emulator {
@@ -12,13 +13,11 @@ const int LinkFace::MIN_BE = 3;
 const int LinkFace::MAX_BE = 5;
 const int LinkFace::MAX_CSMA_BACKOFFS = 4;
 
-LinkFace::LinkFace (const int faceId, const std::string& nodeId,
+LinkFace::LinkFace (const int faceId, boost::shared_ptr<Node> node,
                     const uint64_t macAddr,
                     boost::asio::io_service& ioService,
-                    const boost::function<void (const int, const ndn::Block&)>&
-                    nodeMessageCallback,
                     boost::shared_ptr<Link> link)
-  : Face (faceId, nodeId, ioService, nodeMessageCallback)
+  : Face (faceId, node, ioService)
   , m_macAddr (macAddr)
   , m_link (link)
   , m_rxTimer (ioService)
@@ -28,8 +27,8 @@ LinkFace::LinkFace (const int faceId, const std::string& nodeId,
 {
   boost::random::random_device rng;
   m_engine.seed (rng ());
-  NDNEM_LOG_TRACE ("[LinkFace::LinkFace] (" << m_nodeId
-                   << ":" << m_id << ") on link " << m_link->GetId ());
+  NDNEM_LOG_TRACE ("[LinkFace::LinkFace] (" << m_nodeId << ":" << m_id
+                   << ") on link " << m_link->GetId ());
 }
 
 
@@ -120,7 +119,7 @@ LinkFace::PostRx (const boost::system::error_code& error)
         const uint64_t dst = m_pendingRx->GetDstMac ();
         if (dst == m_macAddr || dst == 0xffff)  //XXX: assume 0xffff is broadcast addr
           // Post the message asynchronously
-          m_ioService.post (boost::bind (m_nodeMessageCallback, m_id, wire));
+          m_ioService.post (boost::bind (&Face::Dispatch, this, wire));
       }
       break;
     case RX_COLLIDE:
