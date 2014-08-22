@@ -9,22 +9,29 @@
     <Node>
       <Id>consumer</Id>
       <Path>/tmp/consumer</Path>
-      <Links>
-	<LinkId>l0</LinkId>
-      </Links>
+      <Devices>
+	<Device>
+	  <LinkId>l0</LinkId>
+	  <MacAddress>0x0001</MacAddress>
+	</Device>
+      </Devices>
       <Routes>
 	<Route>
 	  <Prefix>/</Prefix>
-	  <OutFace>l0</OutFace>
+	  <Interface>0x0001</Interface>
+	  <Nexthop>0x0002</Nexthop>
 	</Route>
       </Routes>
     </Node>
     <Node>
       <Id>producer</Id>
       <Path>/tmp/producer</Path>
-      <Links>
-	<LinkId>l0</LinkId>
-      </Links>
+      <Devices>
+	<Device>
+	  <LinkId>l0</LinkId>
+	  <MacAddress>0x0002</MacAddress>
+	</Device>
+      </Devices>
     </Node>
   </Nodes>
 

@@ -9,6 +9,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/utility.hpp>
+#include <boost/optional.hpp>
 #include <boost/filesystem.hpp>
 #include <map>
 #include <set>
@@ -17,6 +18,7 @@
 #include "app-face.h"
 #include "link-face.h"
 #include "link.h"
+#include "link-device.h"
 #include "pit.h"
 #include "fib.h"
 #include "fib-manager.h"
@@ -26,10 +28,9 @@ namespace emulator {
 
 class Node : public boost::enable_shared_from_this<Node>, boost::noncopyable {
 public:
-  Node (const std::string& id, const uint64_t macAddr, const std::string& socketPath,
+  Node (const std::string& id, const std::string& socketPath,
         int cacheLimit, boost::asio::io_service& ioService)
     : m_id (id)
-    , m_macAddr (macAddr)
     , m_socketPath (socketPath)
     , m_endpoint (m_socketPath)
     , m_ioService (ioService)
@@ -56,11 +57,14 @@ public:
     return m_socketPath;
   }
 
-  bool
-  AddLink (const boost::shared_ptr<Link>&, boost::shared_ptr<LinkFace>&);
+  boost::optional<boost::shared_ptr<LinkDevice> >
+  AddDevice (const uint64_t macAddr, boost::shared_ptr<Link>& link);
+
+  boost::shared_ptr<LinkFace>
+  AddLinkFace (const uint64_t remoteMac, boost::shared_ptr<LinkDevice>& dev);
 
   void
-  AddRoute (const std::string&, const std::string&);
+  AddRoute (const std::string&, const uint64_t, const uint64_t);
 
   void
   RemoveFace (const int);
@@ -83,7 +87,7 @@ private:
                 const boost::system::error_code&);
 
   void
-  ForwardToFace (const boost::shared_ptr<Packet>& pkt, int outId)
+  ForwardToFace (boost::shared_ptr<Packet>& pkt, int outId)
   {
     // Check whether the face still exists
     // It is possible that the face sent an
@@ -95,7 +99,7 @@ private:
   }
 
   void
-  ForwardToFaces (const boost::shared_ptr<Packet>& pkt, std::set<int>& out)
+  ForwardToFaces (boost::shared_ptr<Packet>& pkt, std::set<int>& out)
   {
     // Forward to the faces listed in out face list
     std::set<int>::iterator it;
@@ -107,7 +111,6 @@ private:
 
 private:
   const std::string m_id; // node id
-  const uint64_t m_macAddr; // mac address
   const std::string m_socketPath; // unix domain socket path
   boost::asio::local::stream_protocol::endpoint m_endpoint; // local listening endpoint
   boost::asio::io_service& m_ioService;
@@ -117,8 +120,8 @@ private:
   int m_faceCounter;
   std::map<int, boost::shared_ptr<Face> > m_faceTable;
 
-  // Map from link id to local face id
-  std::map<std::string, int> m_linkTable;
+  // Layer-2 devices
+  std::map<uint64_t, boost::shared_ptr<LinkDevice> > m_deviceTable;
 
   // PIT
   node::Pit m_pit;

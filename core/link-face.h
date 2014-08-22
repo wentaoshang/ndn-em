@@ -12,94 +12,27 @@
 
 namespace emulator {
 
-class Link;
+class LinkDevice;
 
 class LinkFace : public Face {
 public:
   LinkFace (const int faceId, boost::shared_ptr<Node> node,
-            const uint64_t macAddr,
             boost::asio::io_service& ioService,
-            boost::shared_ptr<Link> link);
-
-  const std::string&
-  GetLinkId () const;
+            const uint64_t remoteMac,
+            boost::shared_ptr<LinkDevice>& dev);
 
   void
-  HandleLinkMessage (const boost::shared_ptr<Packet>& pkt)
+  HandleReceive (const ndn::Block& blk)
   {
-    this->StartRx (pkt);
+    this->Dispatch (blk);
   }
 
   virtual void
-  Send (const boost::shared_ptr<Packet>& pkt)
-  {
-    this->StartTx (pkt);
-  }
-
-  // CSMA/CA constants
-  static const int SYMBOL_TIME;
-  static const int BACKOFF_PERIOD;
-  static const int MIN_BE;
-  static const int MAX_BE;
-  static const int MAX_CSMA_BACKOFFS;
-
-  enum PhyState {
-    IDLE = 0,
-    TX,
-    RX,
-    RX_COLLIDE,
-    SLEEP = 254,
-    FAILURE = 255
-  };
-
-  static const std::string
-  PhyStateToString (PhyState s)
-  {
-    switch (s)
-      {
-      case IDLE:
-        return "IDLE";
-      case TX:
-        return "TX";
-      case RX:
-        return "RX";
-      case RX_COLLIDE:
-        return "RX_COLLIDE";
-      case SLEEP:
-        return "SLEEP";
-      case FAILURE:
-        return "FAILURE";
-      default:
-        return "";
-      }
-  }
+  Send (boost::shared_ptr<Packet>& pkt);
 
 private:
-  void
-  StartRx (const boost::shared_ptr<Packet>&);
-
-  void
-  PostRx (const boost::system::error_code&);
-
-  void
-  StartTx (const boost::shared_ptr<Packet>&);
-
-  void
-  StartCsma ();
-
-  void
-  DoCsma (int, int, const boost::system::error_code&);
-
-private:
-  const uint64_t m_macAddr;
-  boost::shared_ptr<Link> m_link;
-  boost::asio::deadline_timer m_rxTimer;  // emulating transmission delay
-  boost::asio::deadline_timer m_csmaTimer; // implementing CSMA algorithm
-  PhyState m_state;
-  boost::shared_ptr<Packet> m_pendingRx;
-  std::deque<boost::shared_ptr<Packet> > m_txQueue;  // FIFO queue
-  const std::size_t m_txQueueLimit;
-  boost::random::mt19937 m_engine;
+  const uint64_t m_remoteMac;
+  boost::shared_ptr<LinkDevice> m_device;
 };
 
 } // namespace emulator

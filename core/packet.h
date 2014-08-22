@@ -17,10 +17,9 @@ namespace emulator {
  */
 class Packet {
 protected:
-  Packet (const uint64_t dst, const uint64_t src,
-          const ndn::Block& wire)
-    : m_dst (dst)
-    , m_src (src)
+  Packet (const ndn::Block& wire)
+    : m_dst (0)
+    , m_src (0)
     , m_wire (wire)
   {
   }
@@ -32,15 +31,27 @@ protected:
 
 public:
   uint64_t
-  GetDstMac () const
+  GetDst () const
   {
     return m_dst;
   }
 
+  void
+  SetDst (uint64_t dst)
+  {
+    m_dst = dst;
+  }
+
   uint64_t
-  GetSrcMac () const
+  GetSrc () const
   {
     return m_src;
+  }
+
+  void
+  SetSrc (uint64_t src)
+  {
+    m_src = src;
   }
 
   const ndn::Block&
@@ -68,8 +79,8 @@ public:
   }
 
 protected:
-  const uint64_t m_dst;
-  const uint64_t m_src;
+  uint64_t m_dst;
+  uint64_t m_src;
   const ndn::Block& m_wire;
 };
 
@@ -78,9 +89,8 @@ protected:
  */
 class InterestPacket : public Packet {
 public:
-  InterestPacket (const uint64_t dst, const uint64_t src,
-                  const boost::shared_ptr<ndn::Interest>& i)
-    : Packet (dst, src, i->wireEncode ())
+  InterestPacket (const boost::shared_ptr<ndn::Interest>& i)
+    : Packet (i->wireEncode ())
     , m_i (i)
   {
   }
@@ -100,9 +110,8 @@ private:
  */
 class DataPacket : public Packet {
 public:
-  DataPacket (const uint64_t dst, const uint64_t src,
-              const boost::shared_ptr<ndn::Data>& d)
-    : Packet (dst, src, d->wireEncode ())
+  DataPacket (const boost::shared_ptr<ndn::Data>& d)
+    : Packet (d->wireEncode ())
     , m_d (d)
   {
   }

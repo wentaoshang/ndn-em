@@ -42,8 +42,9 @@ Node::Start ()
 
   // Wait for connection from clients
   int faceId = m_faceCounter++;
+  boost::shared_ptr<Node> self = this->shared_from_this ();
   boost::shared_ptr<AppFace> client =
-    boost::make_shared<AppFace> (faceId, shared_from_this (),
+    boost::make_shared<AppFace> (faceId, boost::ref (self),
                                  boost::ref (m_ioService));
 
   m_acceptor.async_accept (client->GetSocket (),
@@ -56,8 +57,9 @@ Node::HandleAccept (const boost::shared_ptr<AppFace>& face,
 {
   // Wait for the next client to connect
   int faceId = m_faceCounter++;
+  boost::shared_ptr<Node> self = this->shared_from_this ();
   boost::shared_ptr<AppFace> next =
-    boost::make_shared<AppFace> (faceId, shared_from_this (),
+    boost::make_shared<AppFace> (faceId, boost::ref (self),
                                  boost::ref (m_ioService));
 
   m_acceptor.async_accept (next->GetSocket (),
@@ -69,44 +71,61 @@ Node::HandleAccept (const boost::shared_ptr<AppFace>& face,
   face->Start ();
 }
 
-bool
-Node::AddLink (const boost::shared_ptr<Link>& link, boost::shared_ptr<LinkFace>& out)
+boost::optional<boost::shared_ptr<LinkDevice> >
+Node::AddDevice (const uint64_t macAddr, boost::shared_ptr<Link>& link)
 {
-  const std::string& linkId = link->GetId ();
+  if (m_deviceTable.find (macAddr) != m_deviceTable.end ())
+    return boost::none;
 
-  if (m_linkTable.find (linkId) != m_linkTable.end ())
-    return false;
+  boost::shared_ptr<Node> self = this->shared_from_this ();
+  boost::shared_ptr<LinkDevice> dev =
+    boost::make_shared<LinkDevice> (macAddr, boost::ref (link), boost::ref (self),
+                                    boost::ref (m_ioService));
+  dev->AddBroadcastFace ();
+  
+  // Add device to device table
+  // Assume mac address is globally unique!
+  m_deviceTable[macAddr] = dev;
 
+  return dev;
+}
+
+boost::shared_ptr<LinkFace>
+Node::AddLinkFace (const uint64_t remoteMac, boost::shared_ptr<LinkDevice>& dev)
+{
   int faceId = m_faceCounter++;
+  boost::shared_ptr<Node> self = this->shared_from_this ();
   boost::shared_ptr<LinkFace> face =
-    boost::make_shared<LinkFace> (faceId, shared_from_this (),
-                                  m_macAddr, boost::ref (m_ioService), link);
+    boost::make_shared<LinkFace> (faceId, boost::ref (self),
+                                  boost::ref (m_ioService), remoteMac,
+                                  boost::ref (dev));
 
-  // Add link face to face table
   m_faceTable[faceId] = face;
 
-  out = face;
-
-  // Add link id to link table
-  m_linkTable[linkId] = faceId;
-
-  return true;
+  return face;
 }
 
 void
-Node::AddRoute (const std::string& prefix, const std::string& linkId)
+Node::AddRoute (const std::string& prefix, const uint64_t devMac, const uint64_t nexthop)
 {
-  std::map<std::string, int>::iterator it = m_linkTable.find (linkId);
-  if (it != m_linkTable.end ())
+  std::map<uint64_t, boost::shared_ptr<LinkDevice> >::iterator it
+    = m_deviceTable.find (devMac);
+  if (it != m_deviceTable.end ())
     {
-      int faceId = it->second;
+      boost::shared_ptr<LinkDevice>& dev = it->second;
+      boost::optional<boost::shared_ptr<LinkFace> > face = dev->GetLinkFace (nexthop);
+      if (!face)
+        face = AddLinkFace (nexthop, dev);
+
+      int faceId = (*face)->GetId ();
       ndn::Name p (prefix);
       m_fib.AddRoute (p, faceId);
     }
   else
     {
-      NDNEM_LOG_ERROR ("[Node::AddRoute] (" << m_id << ") link id " << linkId
-                       << " doesn't exist in local link table");
+      NDNEM_LOG_ERROR ("[Node::AddRoute] (" << m_id << ") dev mac "
+                       << std::hex << devMac << std::dec
+                       << " doesn't exist in local device table");
     }
 }
 
@@ -121,8 +140,7 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
     {
       NDNEM_LOG_TRACE ("[Node::HandleInterest] (" << m_id << ":" << faceId
                        << ") found match in cache");
-      const boost::shared_ptr<Packet> pkt
-        (boost::make_shared<DataPacket> (0xffff, m_macAddr, d));
+      boost::shared_ptr<Packet> pkt (boost::make_shared<DataPacket> (d));
       this->ForwardToFace (pkt, faceId);
       return;
     }
@@ -150,8 +168,7 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
       else
         {
           // Forward to faces
-          boost::shared_ptr<Packet> pkt
-            (boost::make_shared<InterestPacket> (0xffff, m_macAddr, i));
+          boost::shared_ptr<Packet> pkt (boost::make_shared<InterestPacket> (i));
           this->ForwardToFaces (pkt, outList);
         }
     }
@@ -176,8 +193,7 @@ Node::HandleData (const int faceId, const boost::shared_ptr<ndn::Data>& d)
       // Cache the data only when we have pending interest for it
       m_cacheManager.Insert (d);
 
-      boost::shared_ptr<Packet> pkt
-        (boost::make_shared<DataPacket> (0xffff, m_macAddr, d));
+      boost::shared_ptr<Packet> pkt (boost::make_shared<DataPacket> (d));
       this->ForwardToFaces (pkt, outList);
     }
   else
@@ -196,14 +212,13 @@ void
 Node::PrintInfo ()
 {
   std::cout << "Node id: " << m_id << std::endl;
-  std::cout << "  MAC address: 0x" << std::hex << m_macAddr << std::dec << std::endl;
   std::cout << "  Unix socket path: " << m_socketPath << std::endl;
   std::cout << "  Cache limit: " << (m_cacheManager.GetLimit () >> 10) << " KB" << std::endl;
-  std::map<std::string, int>::iterator it;
-  std::cout << "  Link table:" << std::endl;
-  for (it = m_linkTable.begin (); it != m_linkTable.end (); it++)
+  std::map<uint64_t, boost::shared_ptr<LinkDevice> >::iterator it;
+  std::cout << "  Device table:" << std::endl;
+  for (it = m_deviceTable.begin (); it != m_deviceTable.end (); it++)
     {
-      std::cout << "    faceId: " << it->second << ", linkId:" << it->first << std::endl; 
+      std::cout << "    mac: 0x" << it->first << std::endl;
     }
   std::cout << "  FIB:" << std::endl;
   m_fib.Print ("    ");

@@ -13,6 +13,16 @@
 
 namespace emulator {
 
+inline int
+HexCast (const std::string& str)
+{
+  int ret;
+  std::stringstream ss;
+  ss << std::hex << str;
+  ss >> ret;
+  return ret;
+}
+
 void
 Emulator::ReadNetworkConfig (const char* path)
 {
@@ -40,9 +50,6 @@ Emulator::ReadNetworkConfig (const char* path)
       BOOST_ASSERT (v.first == "Node");
       ptree& node = v.second;
       const std::string nodeId = node.get<std::string> ("Id");
-      boost::optional<uint64_t> macAddr = node.get_optional<uint64_t> ("MacAddress");
-      if (!macAddr)
-        macAddr = boost::optional<uint64_t> (0xFFFF);  // default mac address for lr-wpan devices
       const std::string path = node.get<std::string> ("Path");
       boost::optional<int> cacheLimit = node.get_optional<int> ("CacheLimit");
       if (!cacheLimit)
@@ -52,21 +59,26 @@ Emulator::ReadNetworkConfig (const char* path)
       if (it == m_nodeTable.end ())
         {
           boost::shared_ptr<Node> pnode
-            (boost::make_shared<Node> (nodeId, *macAddr, path, *cacheLimit,
+            (boost::make_shared<Node> (nodeId, path, *cacheLimit,
                                        boost::ref (m_ioService)));
 
-          BOOST_FOREACH (ptree::value_type& v, node.get_child ("Links"))
+          BOOST_FOREACH (ptree::value_type& v, node.get_child ("Devices"))
             {
-              BOOST_ASSERT (v.first == "LinkId");
-              const std::string linkId = v.second.data ();
+              BOOST_ASSERT (v.first == "Device");
+              ptree& dev = v.second;
+              const std::string linkId = dev.get<std::string> ("LinkId");
+              uint64_t macAddr = static_cast<uint64_t>
+                (HexCast (dev.get<std::string> ("MacAddress")));
+
               std::map<std::string, boost::shared_ptr<Link> >::iterator it =
                 m_linkTable.find (linkId);
               if (it != m_linkTable.end ())
                 {
-                  const boost::shared_ptr<Link>& link = it->second;
-                  boost::shared_ptr<LinkFace> face;
-                  if (pnode->AddLink (link, face))
-                    link->AddNode (face);
+                  boost::shared_ptr<Link>& link = it->second;
+                  boost::optional<boost::shared_ptr<LinkDevice> > ldev =
+                    pnode->AddDevice (macAddr, link);
+                  if (ldev)
+                    link->AddNode (nodeId, *ldev);
                   else
                     NDNEM_LOG_ERROR ("[Emulator::ReadNetworkConfig] duplicate link id "
                                      << linkId << " for node " << nodeId);
@@ -85,8 +97,14 @@ Emulator::ReadNetworkConfig (const char* path)
                   BOOST_ASSERT (v.first == "Route");
                   ptree& rt = v.second;
                   const std::string prefix = rt.get<std::string> ("Prefix");
-                  const std::string outFace = rt.get<std::string> ("OutFace");
-                  pnode->AddRoute (prefix, outFace);
+                  uint64_t dev = static_cast<uint64_t> (HexCast (rt.get<std::string> ("Interface")));
+                  boost::optional<std::string> snexthop = rt.get_optional<std::string> ("Nexthop");
+                  uint64_t nexthop;
+                  if (snexthop)
+                    nexthop = static_cast<uint64_t> (HexCast (*snexthop));
+                  else
+                    nexthop = 0xffff;  // broadcast by default
+                  pnode->AddRoute (prefix, dev, nexthop);
                 }
             }
 

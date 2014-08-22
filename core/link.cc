@@ -1,18 +1,11 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
 
-#include "link-face.h"
+#include "link-device.h"
 #include "link.h"
 
 namespace emulator {
 
 const double Link::TX_RATE = 40.0;  // kbit/s
-
-void
-Link::AddNode (boost::shared_ptr<LinkFace>& node)
-{
-  const std::string& id = node->GetNodeId ();
-  m_nodeTable[id] = node;
-}
 
 void
 Link::Transmit (const std::string& nodeId, const boost::shared_ptr<Packet>& pkt)
@@ -26,7 +19,7 @@ Link::Transmit (const std::string& nodeId, const boost::shared_ptr<Packet>& pkt)
                        << ", LossRate = " << it->second->GetLossRate ());
       if (!it->second->DropPacket ())
         {
-          m_nodeTable[it->first]->HandleLinkMessage (pkt);
+          m_nodeTable[it->first]->StartRx (pkt);
         }
       else
         NDNEM_LOG_DEBUG ("[Link::Transmit] (" << m_id << ") " << nodeId << " -> " << it->first

@@ -45,7 +45,7 @@ public:
   }
 
   virtual void
-  Send (const boost::shared_ptr<Packet>& pkt)
+  Send (boost::shared_ptr<Packet>& pkt)
   {
     const uint8_t* data = pkt->GetBytes ();
     std::size_t length = pkt->GetLength ();

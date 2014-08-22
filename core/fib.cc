@@ -45,7 +45,7 @@ Fib::Print (const std::string& pad)
   fib_type::iterator it;
   for (it = m_fib.begin (); it != m_fib.end (); it++)
     {
-      std::cout << pad << it->first << " ->";
+      std::cout << pad << it->first << " -> faces:";
       std::set<int>& faces = it->second;
       std::set<int>::iterator fit;
       for (fit = faces.begin (); fit != faces.end (); fit++)

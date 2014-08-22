@@ -41,7 +41,7 @@ public:
   }
 
   virtual void
-  Send (const boost::shared_ptr<Packet>&) = 0;
+  Send (boost::shared_ptr<Packet>&) = 0;
 
   void
   Dispatch (const ndn::Block&);

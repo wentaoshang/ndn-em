@@ -13,13 +13,14 @@
 #include <boost/make_shared.hpp>
 #include <boost/utility.hpp>
 
+#include "logging.h"
 #include "link-attribute.h"
 
 namespace emulator {
 
 const std::size_t LINK_MTU = 8800;  // unrealistic assumption
 
-class LinkFace;
+class LinkDevice;
 
 class Link : boost::noncopyable {
 public:
@@ -35,7 +36,10 @@ public:
   }
 
   void
-  AddNode (boost::shared_ptr<LinkFace>&);
+  AddNode (const std::string& nodeId, boost::shared_ptr<LinkDevice>& dev)
+  {
+    m_nodeTable[nodeId] = dev;
+  }
 
   void
   AddConnection (const std::string& from, const std::string& to,
@@ -73,7 +77,7 @@ public:
 
 private:
   const std::string m_id; // link id
-  std::map<std::string, boost::shared_ptr<LinkFace> > m_nodeTable; // nodes on the link
+  std::map<std::string, boost::shared_ptr<LinkDevice> > m_nodeTable; // nodes on the link
   std::map<std::string, std::map<std::string, boost::shared_ptr<LinkAttribute> > > m_linkMatrix;
 };
 
