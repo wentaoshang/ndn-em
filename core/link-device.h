@@ -20,7 +20,8 @@ class LinkFace;
 
 class LinkDevice : public boost::enable_shared_from_this<LinkDevice>, boost::noncopyable {
 public:
-  LinkDevice (const uint64_t macAddr,
+  LinkDevice (const std::string& id,
+              const uint64_t macAddr,
 	      boost::shared_ptr<Link>& link,
 	      boost::shared_ptr<Node>& node,			
 	      boost::asio::io_service& ioService,
@@ -101,6 +102,7 @@ private:
   DoCsma (int, int, const boost::system::error_code&);
 
 private:
+  const std::string m_id;
   const uint64_t m_macAddr;
   const std::string& m_nodeId;
   boost::shared_ptr<Link> m_link;

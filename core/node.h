@@ -9,7 +9,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/utility.hpp>
-#include <boost/optional.hpp>
 #include <boost/filesystem.hpp>
 #include <map>
 #include <set>
@@ -57,14 +56,14 @@ public:
     return m_socketPath;
   }
 
-  boost::optional<boost::shared_ptr<LinkDevice> >
-  AddDevice (const uint64_t macAddr, boost::shared_ptr<Link>& link);
+  boost::shared_ptr<LinkDevice>
+  AddDevice (const std::string&, const uint64_t, boost::shared_ptr<Link>&);
 
   boost::shared_ptr<LinkFace>
   AddLinkFace (const uint64_t remoteMac, boost::shared_ptr<LinkDevice>& dev);
 
   void
-  AddRoute (const std::string&, const uint64_t, const uint64_t);
+  AddRoute (const std::string&, const std::string&, const uint64_t);
 
   void
   RemoveFace (const int);
@@ -121,7 +120,7 @@ private:
   std::map<int, boost::shared_ptr<Face> > m_faceTable;
 
   // Layer-2 devices
-  std::map<uint64_t, boost::shared_ptr<LinkDevice> > m_deviceTable;
+  std::map<std::string, boost::shared_ptr<LinkDevice> > m_deviceTable;
 
   // PIT
   node::Pit m_pit;

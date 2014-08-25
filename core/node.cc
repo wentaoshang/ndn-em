@@ -2,6 +2,7 @@
 
 #include "node.h"
 
+#include <iomanip>
 #include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/data.hpp>
 
@@ -71,21 +72,25 @@ Node::HandleAccept (const boost::shared_ptr<AppFace>& face,
   face->Start ();
 }
 
-boost::optional<boost::shared_ptr<LinkDevice> >
-Node::AddDevice (const uint64_t macAddr, boost::shared_ptr<Link>& link)
+boost::shared_ptr<LinkDevice>
+Node::AddDevice (const std::string& devId, const uint64_t macAddr,
+                 boost::shared_ptr<Link>& link)
 {
-  if (m_deviceTable.find (macAddr) != m_deviceTable.end ())
-    return boost::none;
+  if (m_deviceTable.find (devId) != m_deviceTable.end ())
+    throw std::runtime_error ("[Node::AddDevice] failed to add device " + devId
+                              + " to node " + m_id);
 
   boost::shared_ptr<Node> self = this->shared_from_this ();
   boost::shared_ptr<LinkDevice> dev =
-    boost::make_shared<LinkDevice> (macAddr, boost::ref (link), boost::ref (self),
+    boost::make_shared<LinkDevice> (devId, macAddr,
+                                    boost::ref (link),
+                                    boost::ref (self),
                                     boost::ref (m_ioService));
   dev->AddBroadcastFace ();
   
   // Add device to device table
   // Assume mac address is globally unique!
-  m_deviceTable[macAddr] = dev;
+  m_deviceTable[devId] = dev;
 
   return dev;
 }
@@ -106,10 +111,10 @@ Node::AddLinkFace (const uint64_t remoteMac, boost::shared_ptr<LinkDevice>& dev)
 }
 
 void
-Node::AddRoute (const std::string& prefix, const uint64_t devMac, const uint64_t nexthop)
+Node::AddRoute (const std::string& prefix, const std::string& devId, const uint64_t nexthop)
 {
-  std::map<uint64_t, boost::shared_ptr<LinkDevice> >::iterator it
-    = m_deviceTable.find (devMac);
+  std::map<std::string, boost::shared_ptr<LinkDevice> >::iterator it
+    = m_deviceTable.find (devId);
   if (it != m_deviceTable.end ())
     {
       boost::shared_ptr<LinkDevice>& dev = it->second;
@@ -123,8 +128,7 @@ Node::AddRoute (const std::string& prefix, const uint64_t devMac, const uint64_t
     }
   else
     {
-      NDNEM_LOG_ERROR ("[Node::AddRoute] (" << m_id << ") dev mac "
-                       << std::hex << devMac << std::dec
+      NDNEM_LOG_ERROR ("[Node::AddRoute] (" << m_id << ") dev " << devId
                        << " doesn't exist in local device table");
     }
 }
@@ -214,11 +218,13 @@ Node::PrintInfo ()
   std::cout << "Node id: " << m_id << std::endl;
   std::cout << "  Unix socket path: " << m_socketPath << std::endl;
   std::cout << "  Cache limit: " << (m_cacheManager.GetLimit () >> 10) << " KB" << std::endl;
-  std::map<uint64_t, boost::shared_ptr<LinkDevice> >::iterator it;
+  std::map<std::string, boost::shared_ptr<LinkDevice> >::iterator it;
   std::cout << "  Device table:" << std::endl;
   for (it = m_deviceTable.begin (); it != m_deviceTable.end (); it++)
     {
-      std::cout << "    mac: 0x" << it->first << std::endl;
+      std::cout << "    id: " << it->first << ", mac: 0x" << std::hex
+                << std::setfill ('0') << std::setw (4)
+                << it->second->GetMacAddr () << std::dec << std::endl;
     }
   std::cout << "  FIB:" << std::endl;
   m_fib.Print ("    ");

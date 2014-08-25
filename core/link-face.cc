@@ -3,6 +3,7 @@
 #include "link-face.h"
 #include "link-device.h"
 #include "node.h"
+#include <iomanip>
 
 namespace emulator {
 
@@ -15,7 +16,8 @@ LinkFace::LinkFace (const int faceId, boost::shared_ptr<Node> node,
   , m_device (dev)
 {
   NDNEM_LOG_TRACE ("[LinkFace::LinkFace] (" << m_nodeId << ":" << m_id
-                   << ") remote mac 0x" << std::hex << m_remoteMac << std::dec);
+                   << ") remote mac 0x" << std::hex << std::setfill ('0')
+                   << std::setw (4) << m_remoteMac << std::dec);
 }
 
 inline void

@@ -66,6 +66,7 @@ Emulator::ReadNetworkConfig (const char* path)
             {
               BOOST_ASSERT (v.first == "Device");
               ptree& dev = v.second;
+              const std::string devId = dev.get<std::string> ("DeviceId");
               const std::string linkId = dev.get<std::string> ("LinkId");
               uint64_t macAddr = static_cast<uint64_t>
                 (HexCast (dev.get<std::string> ("MacAddress")));
@@ -75,17 +76,12 @@ Emulator::ReadNetworkConfig (const char* path)
               if (it != m_linkTable.end ())
                 {
                   boost::shared_ptr<Link>& link = it->second;
-                  boost::optional<boost::shared_ptr<LinkDevice> > ldev =
-                    pnode->AddDevice (macAddr, link);
-                  if (ldev)
-                    link->AddNode (nodeId, *ldev);
-                  else
-                    NDNEM_LOG_ERROR ("[Emulator::ReadNetworkConfig] duplicate link id "
-                                     << linkId << " for node " << nodeId);
+                  boost::shared_ptr<LinkDevice> ldev = pnode->AddDevice (devId, macAddr, link);
+                  link->AddNode (nodeId, ldev);
                 }
               else
-                throw std::runtime_error ("[Emulator::ReadNetworkConfig] unkown link id " + linkId
-                                          + " for node " + nodeId);
+                throw std::runtime_error ("[Emulator::ReadNetworkConfig] unkown link " + linkId
+                                          + " on node " + nodeId);
             }
 
           // Static routes are optional
@@ -97,14 +93,16 @@ Emulator::ReadNetworkConfig (const char* path)
                   BOOST_ASSERT (v.first == "Route");
                   ptree& rt = v.second;
                   const std::string prefix = rt.get<std::string> ("Prefix");
-                  uint64_t dev = static_cast<uint64_t> (HexCast (rt.get<std::string> ("Interface")));
+                  const std::string devId = rt.get<std::string> ("Interface");
                   boost::optional<std::string> snexthop = rt.get_optional<std::string> ("Nexthop");
                   uint64_t nexthop;
                   if (snexthop)
-                    nexthop = static_cast<uint64_t> (HexCast (*snexthop));
+                    {
+                      nexthop = static_cast<uint64_t> (HexCast (*snexthop));
+                    }
                   else
                     nexthop = 0xffff;  // broadcast by default
-                  pnode->AddRoute (prefix, dev, nexthop);
+                  pnode->AddRoute (prefix, devId, nexthop);
                 }
             }
 
