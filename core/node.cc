@@ -2,6 +2,7 @@
 
 #include "node.h"
 
+#include <boost/filesystem.hpp>
 #include <iomanip>
 #include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/data.hpp>

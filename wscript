@@ -20,12 +20,7 @@ def configure(conf):
         conf.define('NDNEM_DEBUG', 1)
         conf.add_supported_cxxflags(cxxflags=['-O0',
                                               '-Wall',
-                                              '-Wno-unused-variable',
-                                              '-g3',
-                                              '-Wno-unused-private-field', # only clang supports
-                                              '-fcolor-diagnostics',       # only clang supports
-                                              '-Qunused-arguments'         # only clang supports
-                                              ])
+                                              '-g3'])
     else:
         conf.add_supported_cxxflags(cxxflags=['-O3',
                                               '-Wall',
