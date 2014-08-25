@@ -47,7 +47,11 @@ LinkDevice::AddBroadcastFace ()
 {
   // Create broadcast face
   boost::shared_ptr<LinkDevice> self = this->shared_from_this ();
-  m_faces[0xffff] = m_node->AddLinkFace (0xffff, self);
+  boost::shared_ptr<LinkFace> face = m_node->AddLinkFace (0xffff, self);
+  m_faces[0xffff] = face;
+  NDNEM_LOG_TRACE ("[LinkDevice::AddBroadcastFace] (" << m_nodeId << ":" << m_id
+                   << ") create broadcast face id " << face->GetId ()
+                   << " to remote mac 0xffff");
 }
 
 void
@@ -143,7 +147,8 @@ LinkDevice::PostRx (const boost::system::error_code& error)
 		m_faces[src] = face;
                 NDNEM_LOG_TRACE ("[LinkDevice::PostRx] (" << m_nodeId << ":" << m_id
                                  << ") create on-demand face id " << face->GetId ()
-                                 << " to remote mac " << src);
+                                 << " to remote mac " << std::hex << std::setfill ('0')
+                                 << std::setw (4) << src << std::dec);
 	      }
 	    else
 	      face = it->second;

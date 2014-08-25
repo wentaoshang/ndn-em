@@ -154,7 +154,18 @@ Node::HandleInterest (const int faceId, const boost::shared_ptr<ndn::Interest>& 
     {
       std::set<int> outList;
       m_fib.LookUp (i->getName (), outList);
-      //outList.erase (faceId);  // Do not forward back to incoming face (???)
+      /*
+       * Currently on-demand faces are differentiated by src mac in the packet,
+       * and when link devices send packets, they always set src mac to be their
+       * own unicast mac, rather than 0xffff. This means that packets will never
+       * be received from the pre-allocated "broadcast" faces (with src mac 0xffff).
+       * Therefore it is safe to apply the golden rule of "never sending back to
+       * the interface where the packet is received" on a network that relies on
+       * broadcast forwarding. Potential loops can be detected using nonce tracking.
+       * In the future, the link faces and the forwarding system should take in
+       * other information (e.g., location) to implement smart forwarding strategies.
+       */
+      outList.erase (faceId);  // Do not forward back to incoming face
 
       if (outList.empty ())
         {
