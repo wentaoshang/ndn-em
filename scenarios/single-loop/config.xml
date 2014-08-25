@@ -15,24 +15,40 @@
     <Node>
       <Id>n0</Id>
       <Path>/tmp/node0</Path>
-      <Links>
-	<LinkId>l0</LinkId>
-	<LinkId>l1</LinkId>
-      </Links>
+      <Devices>
+	<Device>
+	  <DeviceId>en0</DeviceId>
+	  <LinkId>l0</LinkId>
+	</Device>
+	<Device>
+	  <DeviceId>en1</DeviceId>
+	  <LinkId>l1</LinkId>
+	</Device>
+      </Devices>
       <Routes>
 	<Route>
 	  <Prefix>/</Prefix>
-	  <OutFace>l0</OutFace>
+	  <Interface>en0</Interface>
 	</Route>
 	<Route>
 	  <Prefix>/</Prefix>
-	  <OutFace>l1</OutFace>
+	  <Interface>en1</Interface>
 	</Route>
       </Routes>
     </Node>
     <Node>
       <Id>n1</Id>
       <Path>/tmp/node1</Path>
+      <Devices>
+	<Device>
+	  <DeviceId>en0</DeviceId>
+	  <LinkId>l0</LinkId>
+	</Device>
+	<Device>
+	  <DeviceId>en1</DeviceId>
+	  <LinkId>l2</LinkId>
+	</Device>
+      </Devices>
       <Links>
 	<LinkId>l0</LinkId>
 	<LinkId>l2</LinkId>
@@ -40,29 +56,35 @@
       <Routes>
 	<Route>
 	  <Prefix>/</Prefix>
-	  <OutFace>l0</OutFace>
+	  <Interface>en0</Interface>
 	</Route>
 	<Route>
 	  <Prefix>/</Prefix>
-	  <OutFace>l2</OutFace>
+	  <Interface>en1</Interface>
 	</Route>
       </Routes>
     </Node>
     <Node>
       <Id>n2</Id>
       <Path>/tmp/node2</Path>
-      <Links>
-	<LinkId>l1</LinkId>
-	<LinkId>l2</LinkId>
-      </Links>
+      <Devices>
+	<Device>
+	  <DeviceId>en0</DeviceId>
+	  <LinkId>l1</LinkId>
+	</Device>
+	<Device>
+	  <DeviceId>en1</DeviceId>
+	  <LinkId>l2</LinkId>
+	</Device>
+      </Devices>
       <Routes>
 	<Route>
 	  <Prefix>/</Prefix>
-	  <OutFace>l1</OutFace>
+	  <Interface>en0</Interface>
 	</Route>
 	<Route>
 	  <Prefix>/</Prefix>
-	  <OutFace>l2</OutFace>
+	  <Interface>en1</Interface>
 	</Route>
       </Routes>
     </Node>

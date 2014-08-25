@@ -11,15 +11,15 @@
       <Path>/tmp/consumer</Path>
       <Devices>
 	<Device>
+	  <DeviceId>wn0</DeviceId>
 	  <LinkId>l0</LinkId>
-	  <MacAddress>0x0001</MacAddress>
 	</Device>
       </Devices>
       <Routes>
 	<Route>
 	  <Prefix>/</Prefix>
-	  <Interface>0x0001</Interface>
-	  <Nexthop>0x0002</Nexthop>
+	  <Interface>wn0</Interface>
+	  <Nexthop>producer</Nexthop>
 	</Route>
       </Routes>
     </Node>
@@ -28,8 +28,8 @@
       <Path>/tmp/producer</Path>
       <Devices>
 	<Device>
+	  <DeviceId>wn0</DeviceId>
 	  <LinkId>l0</LinkId>
-	  <MacAddress>0x0002</MacAddress>
 	</Device>
       </Devices>
     </Node>

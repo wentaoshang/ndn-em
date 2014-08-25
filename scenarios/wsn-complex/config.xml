@@ -12,66 +12,84 @@
     <Node>
       <Id>n0</Id>
       <Path>/tmp/node0</Path>
-      <Links>
-	<LinkId>wpan0</LinkId>
-      </Links>
+      <Devices>
+	<Device>
+	  <DeviceId>wn0</DeviceId>
+	  <LinkId>wpan0</LinkId>
+	</Device>
+      </Devices>
       <Routes>
 	<Route>
 	  <Prefix>/wsn</Prefix>
-	  <OutFace>wpan0</OutFace>
+	  <Interface>wn0</Interface>
 	</Route>
       </Routes>
     </Node>
     <Node>
       <Id>n1</Id>
       <Path>/tmp/node1</Path>
-      <Links>
-	<LinkId>wpan0</LinkId>
-      </Links>
+      <Devices>
+	<Device>
+	  <DeviceId>wn0</DeviceId>
+	  <LinkId>wpan0</LinkId>
+	</Device>
+      </Devices>
       <Routes>
 	<Route>
 	  <Prefix>/wsn</Prefix>
-	  <OutFace>wpan0</OutFace>
+	  <Interface>wn0</Interface>
 	</Route>
       </Routes>
     </Node>
     <Node>
       <Id>n2</Id>
       <Path>/tmp/node2</Path>
-      <Links>
-	<LinkId>wpan0</LinkId>
-      </Links>
+      <Devices>
+	<Device>
+	  <DeviceId>wn0</DeviceId>
+	  <LinkId>wpan0</LinkId>
+	</Device>
+      </Devices>
       <Routes>
 	<Route>
 	  <Prefix>/wsn</Prefix>
-	  <OutFace>wpan0</OutFace>
+	  <Interface>wn0</Interface>
 	</Route>
       </Routes>
     </Node>
     <Node>
       <Id>n3</Id>
       <Path>/tmp/node3</Path>
-      <Links>
-	<LinkId>wpan0</LinkId>
-      </Links>
+      <Devices>
+	<Device>
+	  <DeviceId>wn0</DeviceId>
+	  <LinkId>wpan0</LinkId>
+	</Device>
+      </Devices>
       <Routes>
 	<Route>
 	  <Prefix>/wsn</Prefix>
-	  <OutFace>wpan0</OutFace>
+	  <Interface>wn0</Interface>
 	</Route>
       </Routes>
     </Node>
     <Node>
       <Id>n4</Id>
       <Path>/tmp/node4</Path>
-      <Links>
-	<LinkId>wpan0</LinkId>
-	<LinkId>wpan1</LinkId>
-      </Links>
+      <Devices>
+	<Device>
+	  <DeviceId>wn0</DeviceId>
+	  <LinkId>wpan0</LinkId>
+	</Device>
+	<Device>
+	  <DeviceId>wn1</DeviceId>
+	  <LinkId>wpan1</LinkId>
+	</Device>
+      </Devices>
       <Routes>
 	<Route>
 	  <Prefix>/wsn</Prefix>
-	  <OutFace>wpan0</OutFace>
+	  <Interface>wn0</Interface>
 	</Route>
       </Routes>
     </Node>
@@ -79,13 +97,16 @@
       <Id>n5</Id>
       <Path>/tmp/node5</Path>
       <CacheLimit>1024000</CacheLimit>
-      <Links>
-	<LinkId>wpan1</LinkId>
-      </Links>
+      <Devices>
+	<Device>
+	  <DeviceId>wn0</DeviceId>
+	  <LinkId>wpan1</LinkId>
+	</Device>
+      </Devices>
       <Routes>
 	<Route>
 	  <Prefix>/wsn</Prefix>
-	  <OutFace>wpan1</OutFace>
+	  <Interface>wn0</Interface>
 	</Route>
       </Routes>
     </Node>
