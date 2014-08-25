@@ -28,6 +28,7 @@ def configure(conf):
                                               ])
     else:
         conf.add_supported_cxxflags(cxxflags=['-O3',
+                                              '-Wall',
                                               '-g'])
 
     conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'],

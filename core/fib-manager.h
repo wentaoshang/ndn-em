@@ -17,6 +17,9 @@
 #include "fib.h"
 
 namespace emulator {
+
+class Node;
+
 namespace node {
 
 using ndn::nfd::ControlCommand;
@@ -25,14 +28,10 @@ using ndn::nfd::ControlParameters;
 
 class FibManager {
 public:
-  FibManager (const int faceId, const std::string& nodeId, node::Fib& fib,
-              const std::map<int, boost::shared_ptr<Face> >& faceTable,
-              const boost::function<void (const int, const boost::shared_ptr<ndn::Data>&)>& callback)
+  FibManager (const int faceId, boost::shared_ptr<Node>& node, node::Fib& fib)
     : m_id (faceId)
-    , m_nodeId (nodeId)
+    , m_node (node)
     , m_fib (fib)
-    , m_faceTable (faceTable)
-    , m_nodeMessageCallback (callback)
     , m_fibCmdPrefix ("/localhost/nfd/rib")
   {
     m_fib.AddRoute (m_fibCmdPrefix, m_id);  // register fib command prefix in FIB
@@ -115,13 +114,9 @@ private:
 
 private:
   const int m_id;
-  const std::string& m_nodeId;
+  boost::shared_ptr<Node> m_node;
   // Reference to the node's fib table
   node::Fib& m_fib;
-  // Reference to the nodes's face table
-  const std::map<int, boost::shared_ptr<Face> >& m_faceTable;
-  // Callback to send message to node
-  const boost::function<void (const int, const boost::shared_ptr<ndn::Data>&)> m_nodeMessageCallback;
   const ndn::Name m_fibCmdPrefix;
   ndn::KeyChain m_keyChain;
 };

@@ -1,6 +1,7 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
 
 #include "fib-manager.h"
+#include "node.h"
 
 namespace emulator {
 namespace node {
@@ -51,7 +52,7 @@ FibManager::AddNextHop(ControlParameters& parameters,
 
   const ndn::Name& prefix = parameters.getName ();
   uint64_t faceId = parameters.getFaceId ();
-  uint64_t cost = parameters.getCost(); // ignore cost for now
+  //uint64_t cost = parameters.getCost(); // ignore cost for now
 
   NDNEM_LOG_INFO ("[FibManager::AddNextHop] prefix = " << prefix
                   << ", faceid = " << faceId);
@@ -73,7 +74,7 @@ FibManager::SendResponse(const ndn::Name& name,
   responseData->setContent (encodedControl);
 
   m_keyChain.sign (*responseData);
-  m_nodeMessageCallback (0, responseData);
+  m_node->HandleData (0, responseData);
 }
 
 

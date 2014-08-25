@@ -15,7 +15,7 @@ Node::~Node ()
       // Ignore errors
       boost::system::error_code error;
       m_acceptor.close (error);
-      boost::filesystem::remove (m_socketPath, error);
+      boost::filesystem::remove (m_path, error);
     }
 }
 
@@ -23,7 +23,7 @@ void
 Node::Start ()
 {
   //TODO: check socket path for conflict
-  boost::filesystem::remove (m_socketPath);
+  boost::filesystem::remove (m_path);
 
   m_acceptor.open ();
   m_acceptor.bind (m_endpoint);
@@ -33,17 +33,18 @@ Node::Start ()
   // Schedule clean up routine for PIT
   m_pit.ScheduleCleanUp ();
 
+  // Get shared pointer to "this"
+  boost::shared_ptr<Node> self = this->shared_from_this ();
+
   // Setup fib manager
   m_fibManager = boost::make_shared<node::FibManager>
-    (0, m_id, boost::ref (m_fib), boost::cref (m_faceTable),
-     boost::bind (&Node::HandleData, this, _1, _2));
+    (0, boost::ref (self), boost::ref (m_fib));
 
   // Setup cache manager
-  m_cacheManager.ScheduleCleanUp ();
+  //m_cacheManager.ScheduleCleanUp ();
 
   // Wait for connection from clients
   int faceId = m_faceCounter++;
-  boost::shared_ptr<Node> self = this->shared_from_this ();
   boost::shared_ptr<AppFace> client =
     boost::make_shared<AppFace> (faceId, boost::ref (self),
                                  boost::ref (m_ioService));
@@ -227,8 +228,9 @@ void
 Node::PrintInfo ()
 {
   std::cout << "Node id: " << m_id << std::endl;
-  std::cout << "  Unix socket path: " << m_socketPath << std::endl;
-  std::cout << "  Cache limit: " << (m_cacheManager.GetLimit () >> 10) << " KB" << std::endl;
+  std::cout << "  Unix socket path: " << m_path << std::endl;
+  std::cout << "  Cache limit: " << (m_cacheManager.GetLimit () >> 10)
+            << " KB" << std::endl;
   std::map<std::string, boost::shared_ptr<LinkDevice> >::iterator it;
   std::cout << "  Device table:" << std::endl;
   for (it = m_deviceTable.begin (); it != m_deviceTable.end (); it++)

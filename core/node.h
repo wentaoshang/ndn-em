@@ -27,11 +27,11 @@ namespace emulator {
 
 class Node : public boost::enable_shared_from_this<Node>, boost::noncopyable {
 public:
-  Node (const std::string& id, const std::string& socketPath,
+  Node (const std::string& id, const std::string& path,
         int cacheLimit, boost::asio::io_service& ioService)
     : m_id (id)
-    , m_socketPath (socketPath)
-    , m_endpoint (m_socketPath)
+    , m_path (path)
+    , m_endpoint (m_path)
     , m_ioService (ioService)
     , m_acceptor (ioService)
     , m_isListening (false)
@@ -53,7 +53,7 @@ public:
   const std::string&
   GetPath () const
   {
-    return m_socketPath;
+    return m_path;
   }
 
   boost::shared_ptr<LinkDevice>
@@ -122,7 +122,7 @@ private:
 
 private:
   const std::string m_id; // node id
-  const std::string m_socketPath; // unix domain socket path
+  const std::string m_path; // unix domain socket path
   boost::asio::local::stream_protocol::endpoint m_endpoint; // local listening endpoint
   boost::asio::io_service& m_ioService;
   boost::asio::local::stream_protocol::acceptor m_acceptor; // local listening socket

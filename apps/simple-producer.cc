@@ -63,8 +63,8 @@ public:
   }
 
 private:
-  const std::string m_path;
   const std::string m_name;
+  const std::string m_path;
   shared_ptr<ndn::UnixTransport> m_transport;
   boost::asio::io_service m_ioService;
   Face m_face;
