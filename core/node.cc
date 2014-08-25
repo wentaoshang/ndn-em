@@ -77,8 +77,8 @@ Node::AddDevice (const std::string& devId, const uint64_t macAddr,
                  boost::shared_ptr<Link>& link)
 {
   if (m_deviceTable.find (devId) != m_deviceTable.end ())
-    throw std::runtime_error ("[Node::AddDevice] failed to add device " + devId
-                              + " to node " + m_id);
+    throw std::runtime_error ("[Node::AddDevice] duplicate device id " + devId
+                              + " on node " + m_id);
 
   boost::shared_ptr<Node> self = this->shared_from_this ();
   boost::shared_ptr<LinkDevice> dev =
@@ -128,8 +128,8 @@ Node::AddRoute (const std::string& prefix, const std::string& devId, const uint6
     }
   else
     {
-      NDNEM_LOG_ERROR ("[Node::AddRoute] (" << m_id << ") dev " << devId
-                       << " doesn't exist in local device table");
+      throw std::runtime_error ("[Node::AddRoute] (" + m_id + ") dev " + devId
+                                + " doesn't exist in local device table");
     }
 }
 

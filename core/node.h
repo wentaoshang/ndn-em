@@ -59,6 +59,18 @@ public:
   boost::shared_ptr<LinkDevice>
   AddDevice (const std::string&, const uint64_t, boost::shared_ptr<Link>&);
 
+  boost::shared_ptr<LinkDevice>
+  GetDevice (const std::string& devId)
+  {
+    std::map<std::string, boost::shared_ptr<LinkDevice> >::iterator it
+      = m_deviceTable.find (devId);
+      if (it == m_deviceTable.end ())
+        throw std::runtime_error ("[Node::GetDevice] device " + devId
+                                  + " doesn't exist on node " + m_id);
+      else
+        return it->second;
+  }
+
   boost::shared_ptr<LinkFace>
   AddLinkFace (const uint64_t remoteMac, boost::shared_ptr<LinkDevice>& dev);
 

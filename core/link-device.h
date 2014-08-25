@@ -65,6 +65,12 @@ public:
       }
   }
 
+  boost::shared_ptr<Link>
+  GetLink () const
+  {
+    return m_link;
+  }
+
   uint64_t
   GetMacAddr () const
   {

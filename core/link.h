@@ -36,9 +36,21 @@ public:
   }
 
   void
-  AddNode (const std::string& nodeId, boost::shared_ptr<LinkDevice>& dev)
+  AddNodeDevice (const std::string& nodeId, boost::shared_ptr<LinkDevice>& dev)
   {
     m_nodeTable[nodeId] = dev;
+  }
+
+  boost::shared_ptr<LinkDevice>
+  GetNodeDevice (const std::string& nodeId)
+  {
+    std::map<std::string, boost::shared_ptr<LinkDevice> >::iterator it
+      = m_nodeTable.find (nodeId);
+    if (it == m_nodeTable.end ())
+      throw std::runtime_error ("[Link::GetNodeDevice] unkown node "
+                                + nodeId + " on link " + m_id);
+    else
+      return it->second;
   }
 
   void
@@ -49,11 +61,11 @@ public:
       throw std::runtime_error ("[Link::AddConnection] src & dst equal to " + from);
 
     if (m_nodeTable.find (from) == m_nodeTable.end ())
-      throw std::runtime_error ("[Link::AddConnection] unknown node id "
+      throw std::runtime_error ("[Link::AddConnection] unknown node "
                                 + from + " on link " + m_id);
 
     if (m_nodeTable.find (to) == m_nodeTable.end ())
-      throw std::runtime_error ("[LinkAddConnection] unknown node id "
+      throw std::runtime_error ("[LinkAddConnection] unknown node "
                                 + to + " on link " + m_id);
 
     m_linkMatrix[from][to] = attr;

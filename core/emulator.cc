@@ -1,8 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil -*- */
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <exception>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -12,16 +9,6 @@
 #include "emulator.h"
 
 namespace emulator {
-
-inline int
-HexCast (const std::string& str)
-{
-  int ret;
-  std::stringstream ss;
-  ss << std::hex << str;
-  ss >> ret;
-  return ret;
-}
 
 void
 Emulator::ReadNetworkConfig (const char* path)
@@ -44,7 +31,9 @@ Emulator::ReadNetworkConfig (const char* path)
         throw std::runtime_error ("[Emulator::ReadNetworkConfig] duplicate link id " + linkId);
     }
 
+  uint64_t globalMacAssigner = 0x0001; // ensures we allocate globally unique mac addresses
   ptree& nodes = config.get_child ("Config.Nodes");
+  // First iteration will create all the nodes & devices
   BOOST_FOREACH (ptree::value_type& v, nodes)
     {
       BOOST_ASSERT (v.first == "Node");
@@ -68,8 +57,7 @@ Emulator::ReadNetworkConfig (const char* path)
               ptree& dev = v.second;
               const std::string devId = dev.get<std::string> ("DeviceId");
               const std::string linkId = dev.get<std::string> ("LinkId");
-              uint64_t macAddr = static_cast<uint64_t>
-                (HexCast (dev.get<std::string> ("MacAddress")));
+              uint64_t macAddr = globalMacAssigner++;
 
               std::map<std::string, boost::shared_ptr<Link> >::iterator it =
                 m_linkTable.find (linkId);
@@ -77,39 +65,49 @@ Emulator::ReadNetworkConfig (const char* path)
                 {
                   boost::shared_ptr<Link>& link = it->second;
                   boost::shared_ptr<LinkDevice> ldev = pnode->AddDevice (devId, macAddr, link);
-                  link->AddNode (nodeId, ldev);
+                  link->AddNodeDevice (nodeId, ldev);
                 }
               else
                 throw std::runtime_error ("[Emulator::ReadNetworkConfig] unkown link " + linkId
                                           + " on node " + nodeId);
             }
 
-          // Static routes are optional
-          boost::optional<ptree&> routes = node.get_child_optional ("Routes");
-          if (routes)
-            {
-              BOOST_FOREACH (ptree::value_type& v, *routes)
-                {
-                  BOOST_ASSERT (v.first == "Route");
-                  ptree& rt = v.second;
-                  const std::string prefix = rt.get<std::string> ("Prefix");
-                  const std::string devId = rt.get<std::string> ("Interface");
-                  boost::optional<std::string> snexthop = rt.get_optional<std::string> ("Nexthop");
-                  uint64_t nexthop;
-                  if (snexthop)
-                    {
-                      nexthop = static_cast<uint64_t> (HexCast (*snexthop));
-                    }
-                  else
-                    nexthop = 0xffff;  // broadcast by default
-                  pnode->AddRoute (prefix, devId, nexthop);
-                }
-            }
-
           m_nodeTable[nodeId] = pnode;
         }
       else
         throw std::runtime_error ("[Emulator::ReadNetworkConfig] duplicate node id " + nodeId);
+    }
+
+  // Second iteration will create routes
+  BOOST_FOREACH (ptree::value_type& v, nodes)
+    {
+      BOOST_ASSERT (v.first == "Node");
+      ptree& node = v.second;
+      const std::string nodeId = node.get<std::string> ("Id");
+      boost::shared_ptr<Node> pnode = m_nodeTable[nodeId];
+
+      // Static routes are optional
+      boost::optional<ptree&> routes = node.get_child_optional ("Routes");
+      if (routes)
+        {
+          BOOST_FOREACH (ptree::value_type& v, *routes)
+            {
+              BOOST_ASSERT (v.first == "Route");
+              ptree& rt = v.second;
+              const std::string prefix = rt.get<std::string> ("Prefix");
+              const std::string devId = rt.get<std::string> ("Interface");
+              boost::optional<std::string> snexthop = rt.get_optional<std::string> ("Nexthop");
+              uint64_t nexthop;
+              if (snexthop)
+                {
+                  boost::shared_ptr<Link> l = pnode->GetDevice (devId)->GetLink ();
+                  nexthop = l->GetNodeDevice (*snexthop)->GetMacAddr ();
+                }
+              else
+                nexthop = 0xffff;  // broadcast by default
+              pnode->AddRoute (prefix, devId, nexthop);
+            }
+        }
     }
   this->PrintNodes();
 
