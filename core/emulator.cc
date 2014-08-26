@@ -11,7 +11,7 @@
 namespace emulator {
 
 void
-Emulator::ReadNetworkConfig (const char* path)
+Emulator::ReadNetworkConfig (const std::string& path)
 {
   NDNEM_LOG_INFO ("[Emulator::ReadNetworkConfig] from file: " << path);
 

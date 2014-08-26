@@ -15,7 +15,7 @@ namespace emulator {
 class Emulator {
 public:
   void
-  ReadNetworkConfig (const char* path);
+  ReadNetworkConfig (const std::string& path);
 
   Node&
   GetNode (const std::string& nodeId)

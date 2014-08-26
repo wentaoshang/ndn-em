@@ -37,7 +37,7 @@ Simple examples
 
 You can try to run the test cases inside ./scenarios folder. For example, the following command starts the emulator with the "3-swithces" topology:
 
-    ./build/ndnem ./scenario/3-swithces/config.xml
+    ./build/ndnem -c ./scenario/3-swithces/config.xml
 
 Then you can connect the simple consumer to node 0 and let the consumer resend Interest packet every 4000 ms:
 
