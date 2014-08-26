@@ -32,17 +32,17 @@ When you are running ndnem, OS X may ask you to authorize the ndnem program to a
 
 Refer to NFD and ndn-cxx documents for more information about RIB management protocol.
 
-Simple examples
----------------
+Play around
+-----------
 
 You can try to run the test cases inside ./scenarios folder. For example, the following command starts the emulator with the "3-swithces" topology:
 
     ./build/ndnem -c ./scenario/3-swithces/config.xml
 
-Then you can connect the simple consumer to node 0 and let the consumer resend Interest packet every 4000 ms:
+Then you can connect the simple consumer to node 0 and let the consumer resend Interest packet with the name `/test/app` every 4000 ms:
 
-    ./build/simple-consumer 4000 /tmp/node0
+    ./build/simple-consumer 4000 /test/app /tmp/node0
 
-And then connect the simple producer to node 5:
+And then connect the simple producer to node 5 to publish under the name `/test/app`:
 
-    ./build/simple-producer /tmp/node5
+    ./build/simple-producer /test/app /tmp/node5
