@@ -40,7 +40,17 @@ When you are running ndnem, OS X may ask you to authorize the ndnem program to a
 when the program tries to get the keychain for the first time.
 Simply allow the access so that the emulator can use your identity to sign the Data packets generated during the prefix registration process.
 
-Refer to NFD and ndn-cxx documents for more information about RIB management protocol.
+Refer to NFD and ndn-cxx documentations for more information about RIB management protocol.
+
+Usage
+-----
+
+The emulator command line interface takes in two parameters:
+
+- `-l`: the optional parameter specifying the log level. The default log level is `INFO`.
+- `-c`: the path of the configuration file. This parameter is mandatory.
+
+Run `ndnem -h` to get help information about the command line parameters.
 
 Play around
 -----------
@@ -57,3 +67,10 @@ Then you can connect the simple consumer to node 0 and let the consumer send Int
 And then connect the simple producer to node 5 to publish under the name `/test/app`:
 
     ./build/simple-producer /test/app /tmp/node5
+
+Next step
+---------
+
+Read the [tutorial] (https://github.com/wentaoshang/ndn-em/blob/master/tutorial.md)
+about how to write a network configuration file for the emulator.
+Then run your own NDN applications on top of the emulator with your customized network scenario and **HAVE FUN**!

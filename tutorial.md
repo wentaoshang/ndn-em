@@ -13,16 +13,23 @@ Inside the root element there are three sections:
 - `Nodes`, which describes individual NDN forwards inside the network;
 - `Matrices`, which describes the connectivity information between different pairs of nodes on each link, using the adjacency matrix data structure.
 
-We will explain how to write each section in the rest of this tutorial.
+Each of these sections contain one or more elements to describe each individual link, node or connectivity matrix.
+Those elements further contain one or more attributes (explained below) to specify the parameters of the entities they describe.
+The attributes can be either mandatory or optional. Omitting mandatory fields will cause the emulator to throw an error at the initialization phase.
 
 "Links" section
 ---------------
 
 The `Links` section contains one or more `Link` elements.
-For now, there is only one mandatory attribute for links: the link id, which is a mnemonic name for the individual LANs.
-More attributes (such as link transmission rate) will be added later.
+Currently the emulator supports three attributes:
 
-Here is an example of the `Links` section that defines a single LAN called "homenet0":
+- `Id`: a mnemonic name for the individual LANs. This attribute is mandatory.
+- `TxRate`: the constant transmission rate on the link in kbits/s (we do not support link rate adaptation yet).
+This attribute is optional. If not specified, the default value is 40 kbits/s (one of the standard operation rate for 802.15.4).
+- `Mtu`: the link MTU in bytes. This attribute is optional.
+If not specified, the default value is 8800 bytes (the max size of NDN packets supported by ndn-cxx).
+
+Here is an example of the `Links` section that defines a single LAN called "homenet0" with default TX rate and MTU:
 
 ```xml
 <Links>
@@ -39,12 +46,14 @@ The `Nodes` section contains one or more `Node` elements. Each node requires the
 
 - `Id`: the mnemonic name of the node.
 - `Path`: the Unix domain socket path which the NDN applications can connect to.
-- `CacheLimit`: the size of the cache on the node (in bytes). This attribute is optional. If not specified, the default value is 100 KB.
+- `CacheLimit`: the size of the cache on the node in kBytes.
+This attribute is optional. If not specified, the default value is 100 KB.
 - `Devices`: each node needs at least one network device to connect to some link.
 The `Devices` element contains one or more `Device` elements. Each device needs the following mandatory attributes:
   - `DeviceId`: the node-local mnemonic name of the device (e.g., eth0). It only has to be unique within each node.
   - `LinkId`: the id of the link which the device is attached to. The id must have appeared in the `Links` section.
-- `Routes`: optional attribute to provide static routes for each node. The `Routes` element contains one or more `Route` elements. Each route has the following attributes:
+- `Routes`: optional attribute to provide static routes for each node.
+The `Routes` element contains one or more `Route` elements. Each route has the following attributes:
   - `Prefix`: the URL-formatted NDN prefix.
   - `Interface`: the id of the network device where the matched Interests should be forwarded.
   - `Nexthop`: the id of the node on the same link who should receive the packet. This attribute is optional.
