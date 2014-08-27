@@ -67,7 +67,8 @@ LinkDevice::StartRx (const boost::shared_ptr<Packet>& pkt)
         m_pendingRx = pkt;
         std::size_t pkt_len = pkt->GetLength ();
         long delay = static_cast<long>
-          ((static_cast<double> (pkt_len) * 8.0 * 1E6 / (Link::TX_RATE * 1024.0)));
+          ((static_cast<double> (pkt_len) * 8.0 * 1E6
+            / (m_link->GetTxRate () * 1024.0)));
 
         NDNEM_LOG_TRACE ("[LinkDevice::StartRx] (" << m_nodeId << ":" << m_id
                          << ") set rx timer in " << delay << " us");
@@ -87,7 +88,8 @@ LinkDevice::StartRx (const boost::shared_ptr<Packet>& pkt)
         m_pendingRx = pkt;
         std::size_t pkt_len = pkt->GetLength ();
         long delay = static_cast<long>
-          ((static_cast<double> (pkt_len) * 8.0 * 1E6 / (Link::TX_RATE * 1024.0)));
+          ((static_cast<double> (pkt_len) * 8.0 * 1E6
+            / (m_link->GetTxRate () * 1024.0)));
 
         NDNEM_LOG_TRACE ("[LinkDevice::StartRx] (" << m_nodeId << ":" << m_id
                          << ") set rx timer in " << delay << " us");
@@ -108,7 +110,8 @@ LinkDevice::StartRx (const boost::shared_ptr<Packet>& pkt)
     default:
       NDNEM_LOG_ERROR ("[LinkDevice::StartRx] (" << m_nodeId << ":" << m_id
                        << ") illegal state: " << PhyStateToString (m_state));
-      throw std::runtime_error ("[LinkDevice::StartRx] illegal state: " + PhyStateToString (m_state));
+      throw std::runtime_error ("[LinkDevice::StartRx] illegal state: "
+                                + PhyStateToString (m_state));
       break;
     }
   NDNEM_LOG_TRACE ("[LinkDevice::StartRx] (" << m_nodeId << ":" << m_id
@@ -195,10 +198,17 @@ LinkDevice::StartTx (boost::shared_ptr<Packet>& pkt)
                    << ") device in " << PhyStateToString (m_state)
                    << ". Queue size = " << m_txQueue.size ());
 
+  if (pkt->GetLength () > m_link->GetMtu ())
+    {
+      NDNEM_LOG_INFO ("[LinkDevice::StartTx] (" << m_nodeId << ":" << m_id
+                      << ") packet size exceed link mtu. Drop packet.");
+      return;
+    }
+
   if (m_txQueue.size () < m_txQueueLimit)
     {
       NDNEM_LOG_TRACE ("[LinkDevice::StartTx] (" << m_nodeId << ":" << m_id
-                       << ") enqueue the packet and start csma ");
+                       << ") enqueue the packet and start csma");
       pkt->SetSrc (m_macAddr);
       m_txQueue.push_back (pkt);
       this->StartCsma ();
@@ -256,7 +266,8 @@ LinkDevice::DoCsma (int NB, int BE, const boost::system::error_code& error)
         // Set timer to clear TX state later
         std::size_t pkt_len = pkt->GetLength ();
         long delay = static_cast<long>
-          ((static_cast<double> (pkt_len) * 8.0 * 1E6 / (Link::TX_RATE * 1024.0)));
+          ((static_cast<double> (pkt_len) * 8.0 * 1E6
+            / (m_link->GetTxRate () * 1024.0)));
 
         NDNEM_LOG_TRACE ("[LinkDevice::DoCsma] (" << m_nodeId << ":" << m_id
                          << ") set csma timer in " << delay << " us for TX");

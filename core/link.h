@@ -18,21 +18,33 @@
 
 namespace emulator {
 
-const std::size_t LINK_MTU = 8800;  // unrealistic assumption
-
 class LinkDevice;
 
 class Link : boost::noncopyable {
 public:
-  Link (const std::string& id)
+  Link (const std::string& id, double rate, std::size_t mtu)
     : m_id (id)
+    , m_txRate (rate)
+    , m_mtu (mtu)
   {
   }
 
   const std::string&
-  GetId ()
+  GetId () const
   {
     return m_id;
+  }
+
+  double
+  GetTxRate () const
+  {
+    return m_txRate;
+  }
+
+  std::size_t
+  GetMtu () const
+  {
+    return m_mtu;
   }
 
   void
@@ -85,10 +97,10 @@ public:
     this->PrintLinkMatrix ("    ");
   }
 
-  static const double TX_RATE; // in kbit/s
-
 private:
   const std::string m_id; // link id
+  const double m_txRate; // in kbits/s
+  const std::size_t m_mtu;  // in bytes
   std::map<std::string, boost::shared_ptr<LinkDevice> > m_nodeTable; // nodes on the link
   std::map<std::string, std::map<std::string, boost::shared_ptr<LinkAttribute> > > m_linkMatrix;
 };

@@ -96,7 +96,7 @@
     <Node>
       <Id>n5</Id>
       <Path>/tmp/node5</Path>
-      <CacheLimit>1024000</CacheLimit>
+      <CacheLimit>1000</CacheLimit>
       <Devices>
 	<Device>
 	  <DeviceId>wn0</DeviceId>

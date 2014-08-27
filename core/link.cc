@@ -5,8 +5,6 @@
 
 namespace emulator {
 
-const double Link::TX_RATE = 40.0;  // kbit/s
-
 void
 Link::Transmit (const std::string& nodeId, const boost::shared_ptr<Packet>& pkt)
 {

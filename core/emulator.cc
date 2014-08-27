@@ -23,10 +23,18 @@ Emulator::ReadNetworkConfig (const std::string& path)
   BOOST_FOREACH (ptree::value_type& v, links)
     {
       BOOST_ASSERT (v.first == "Link");
-      const std::string linkId = v.second.get<std::string> ("Id");
+      ptree& link = v.second;
+      const std::string linkId = link.get<std::string> ("Id");
+      boost::optional<double> txRate = link.get_optional<double> ("TxRate");
+      if (!txRate)
+        txRate = boost::optional<double> (40.0);  // default tx rate is 40 kbits/s
+      boost::optional<int> mtu = link.get_optional<int> ("Mtu");
+      if (!mtu)
+        mtu = boost::optional<int> (8800);  // default MTU is 8800 bytes
+
       std::map<std::string, boost::shared_ptr<Link> >::iterator it = m_linkTable.find (linkId);
       if (it == m_linkTable.end ())
-        m_linkTable[linkId] = boost::make_shared<Link> (linkId);
+        m_linkTable[linkId] = boost::make_shared<Link> (linkId, *txRate, *mtu);
       else
         throw std::runtime_error ("[Emulator::ReadNetworkConfig] duplicate link id " + linkId);
     }
@@ -42,13 +50,13 @@ Emulator::ReadNetworkConfig (const std::string& path)
       const std::string path = node.get<std::string> ("Path");
       boost::optional<int> cacheLimit = node.get_optional<int> ("CacheLimit");
       if (!cacheLimit)
-        cacheLimit = boost::optional<int> (102400);  // default cache size is 100KB
+        cacheLimit = boost::optional<int> (100);  // default cache size is 100 KB
 
       std::map<std::string, boost::shared_ptr<Node> >::iterator it = m_nodeTable.find (nodeId);
       if (it == m_nodeTable.end ())
         {
           boost::shared_ptr<Node> pnode
-            (boost::make_shared<Node> (nodeId, path, *cacheLimit,
+            (boost::make_shared<Node> (nodeId, path, (*cacheLimit << 10),
                                        boost::ref (m_ioService)));
 
           BOOST_FOREACH (ptree::value_type& v, node.get_child ("Devices"))

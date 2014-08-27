@@ -64,7 +64,7 @@
     <Node>
       <Id>n3</Id>
       <Path>/tmp/node3</Path>
-      <CacheLimit>1024000</CacheLimit>
+      <CacheLimit>1000</CacheLimit>
       <Devices>
 	<Device>
 	  <DeviceId>wn0</DeviceId>
