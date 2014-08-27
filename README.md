@@ -55,7 +55,8 @@ Run `ndnem -h` to get help information about the command line parameters.
 Play around
 -----------
 
-You can try to run the test cases inside [scenarios] (https://github.com/wentaoshang/ndn-em/tree/master/scenarios) folder.
+You can try to run the test network scenarios inside [scenarios]
+(https://github.com/wentaoshang/ndn-em/tree/master/scenarios) folder.
 For example, the following command starts the emulator with the "3-swithces" topology:
 
     ./build/ndnem -c ./scenario/3-swithces/config.xml
@@ -67,6 +68,8 @@ Then you can connect the simple consumer to node 0 and let the consumer send Int
 And then connect the simple producer to node 5 to publish under the name `/test/app`:
 
     ./build/simple-producer /test/app /tmp/node5
+
+Refer to [apps/README.md] (https://github.com/wentaoshang/ndn-em/blob/master/apps/README.md) for usage of the test apps.
 
 Next step
 ---------

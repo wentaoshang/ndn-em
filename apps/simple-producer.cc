@@ -25,7 +25,7 @@ public:
 
     // Create new name, based on Interest's name
     Name dataName (interest.getName ());
-    dataName.append("123").appendVersion();
+    dataName.appendVersion ();
 
     static const std::string content = "HELLO KITTY";
 

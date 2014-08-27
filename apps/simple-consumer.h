@@ -50,7 +50,7 @@ private:
 
     std::cout << ">> I: " << i.getName () << std::endl;
 
-    if (m_delay != -1)
+    if (m_delay > 0)
       // Schedule a new event
       m_scheduler.scheduleEvent (ndn::time::milliseconds (m_delay),
                                  ndn::bind (&SimpleConsumer::SendInterest, this));
